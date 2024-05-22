@@ -14,6 +14,11 @@
 		840974722BF7054200AD36A4 /* MC2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840974712BF7054200AD36A4 /* MC2Tests.swift */; };
 		8409747C2BF7054200AD36A4 /* MC2UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8409747B2BF7054200AD36A4 /* MC2UITests.swift */; };
 		8409747E2BF7054200AD36A4 /* MC2UITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8409747D2BF7054200AD36A4 /* MC2UITestsLaunchTests.swift */; };
+		8409748B2BFAE73800AD36A4 /* CameraViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8409748A2BFAE73800AD36A4 /* CameraViewController.swift */; };
+		840974902BFC3CA600AD36A4 /* SwiftUIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8409748F2BFC3CA600AD36A4 /* SwiftUIView.swift */; };
+		840974942BFC762E00AD36A4 /* CoreML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840974932BFC762E00AD36A4 /* CoreML.swift */; };
+		840974962BFC7DC300AD36A4 /* best.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 840974952BFC7DC300AD36A4 /* best.mlpackage */; };
+		840974982BFD78A100AD36A4 /* SplashScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840974972BFD78A100AD36A4 /* SplashScreenView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,6 +49,12 @@
 		840974772BF7054200AD36A4 /* MC2UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MC2UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8409747B2BF7054200AD36A4 /* MC2UITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MC2UITests.swift; sourceTree = "<group>"; };
 		8409747D2BF7054200AD36A4 /* MC2UITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MC2UITestsLaunchTests.swift; sourceTree = "<group>"; };
+		8409748A2BFAE73800AD36A4 /* CameraViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewController.swift; sourceTree = "<group>"; };
+		8409748C2BFAE7A900AD36A4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		8409748F2BFC3CA600AD36A4 /* SwiftUIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUIView.swift; sourceTree = "<group>"; };
+		840974932BFC762E00AD36A4 /* CoreML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreML.swift; sourceTree = "<group>"; };
+		840974952BFC7DC300AD36A4 /* best.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = best.mlpackage; sourceTree = "<group>"; };
+		840974972BFD78A100AD36A4 /* SplashScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -94,8 +105,14 @@
 		8409745F2BF7054000AD36A4 /* MC2 */ = {
 			isa = PBXGroup;
 			children = (
+				8409748C2BFAE7A900AD36A4 /* Info.plist */,
 				840974602BF7054000AD36A4 /* MC2App.swift */,
+				840974932BFC762E00AD36A4 /* CoreML.swift */,
+				840974972BFD78A100AD36A4 /* SplashScreenView.swift */,
 				840974622BF7054000AD36A4 /* ContentView.swift */,
+				8409748F2BFC3CA600AD36A4 /* SwiftUIView.swift */,
+				8409748A2BFAE73800AD36A4 /* CameraViewController.swift */,
+				840974952BFC7DC300AD36A4 /* best.mlpackage */,
 				840974642BF7054200AD36A4 /* Assets.xcassets */,
 				840974662BF7054200AD36A4 /* Preview Content */,
 			);
@@ -257,8 +274,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				840974982BFD78A100AD36A4 /* SplashScreenView.swift in Sources */,
 				840974632BF7054000AD36A4 /* ContentView.swift in Sources */,
 				840974612BF7054000AD36A4 /* MC2App.swift in Sources */,
+				840974902BFC3CA600AD36A4 /* SwiftUIView.swift in Sources */,
+				8409748B2BFAE73800AD36A4 /* CameraViewController.swift in Sources */,
+				840974942BFC762E00AD36A4 /* CoreML.swift in Sources */,
+				840974962BFC7DC300AD36A4 /* best.mlpackage in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -422,13 +444,15 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"MC2/Preview Content\"";
+				DEVELOPMENT_TEAM = 4492BP5753;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MC2/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera for capturing photos and videos";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationLandscapeRight;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -450,13 +474,15 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"MC2/Preview Content\"";
+				DEVELOPMENT_TEAM = 4492BP5753;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MC2/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera for capturing photos and videos";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationLandscapeRight;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
