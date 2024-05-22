@@ -16,9 +16,8 @@
 		8409747E2BF7054200AD36A4 /* MC2UITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8409747D2BF7054200AD36A4 /* MC2UITestsLaunchTests.swift */; };
 		8409748B2BFAE73800AD36A4 /* CameraViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8409748A2BFAE73800AD36A4 /* CameraViewController.swift */; };
 		840974902BFC3CA600AD36A4 /* SwiftUIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8409748F2BFC3CA600AD36A4 /* SwiftUIView.swift */; };
-		840974942BFC762E00AD36A4 /* CoreML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840974932BFC762E00AD36A4 /* CoreML.swift */; };
-		840974962BFC7DC300AD36A4 /* best.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 840974952BFC7DC300AD36A4 /* best.mlpackage */; };
 		840974982BFD78A100AD36A4 /* SplashScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840974972BFD78A100AD36A4 /* SplashScreenView.swift */; };
+		8409749A2BFDA29300AD36A4 /* best_v2.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 840974992BFDA29300AD36A4 /* best_v2.mlpackage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,9 +51,8 @@
 		8409748A2BFAE73800AD36A4 /* CameraViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewController.swift; sourceTree = "<group>"; };
 		8409748C2BFAE7A900AD36A4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8409748F2BFC3CA600AD36A4 /* SwiftUIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUIView.swift; sourceTree = "<group>"; };
-		840974932BFC762E00AD36A4 /* CoreML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreML.swift; sourceTree = "<group>"; };
-		840974952BFC7DC300AD36A4 /* best.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = best.mlpackage; sourceTree = "<group>"; };
 		840974972BFD78A100AD36A4 /* SplashScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenView.swift; sourceTree = "<group>"; };
+		840974992BFDA29300AD36A4 /* best_v2.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = best_v2.mlpackage; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -107,12 +105,11 @@
 			children = (
 				8409748C2BFAE7A900AD36A4 /* Info.plist */,
 				840974602BF7054000AD36A4 /* MC2App.swift */,
-				840974932BFC762E00AD36A4 /* CoreML.swift */,
 				840974972BFD78A100AD36A4 /* SplashScreenView.swift */,
 				840974622BF7054000AD36A4 /* ContentView.swift */,
 				8409748F2BFC3CA600AD36A4 /* SwiftUIView.swift */,
 				8409748A2BFAE73800AD36A4 /* CameraViewController.swift */,
-				840974952BFC7DC300AD36A4 /* best.mlpackage */,
+				840974992BFDA29300AD36A4 /* best_v2.mlpackage */,
 				840974642BF7054200AD36A4 /* Assets.xcassets */,
 				840974662BF7054200AD36A4 /* Preview Content */,
 			);
@@ -275,12 +272,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				840974982BFD78A100AD36A4 /* SplashScreenView.swift in Sources */,
+				8409749A2BFDA29300AD36A4 /* best_v2.mlpackage in Sources */,
 				840974632BF7054000AD36A4 /* ContentView.swift in Sources */,
 				840974612BF7054000AD36A4 /* MC2App.swift in Sources */,
 				840974902BFC3CA600AD36A4 /* SwiftUIView.swift in Sources */,
 				8409748B2BFAE73800AD36A4 /* CameraViewController.swift in Sources */,
-				840974942BFC762E00AD36A4 /* CoreML.swift in Sources */,
-				840974962BFC7DC300AD36A4 /* best.mlpackage in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

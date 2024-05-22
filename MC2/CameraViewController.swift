@@ -1,23 +1,47 @@
 import Foundation
 import SwiftUI
 import AVFoundation
+import CoreML
+import Vision
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
     private var permissionGranted = false
-    private let captureSession = AVCaptureSession()
+    private var captureSession = AVCaptureSession()
     private let sessionQueue = DispatchQueue(label: "sessionQueue")
     private var previewLayer = AVCaptureVideoPreviewLayer()
     var screenRect: CGRect! = nil
     private var currentCameraPosition: AVCaptureDevice.Position = .back
+    private let videoDataOutputQueue = DispatchQueue(label: "CameraFeedDataOutput", qos: .userInitiated,
+                                                     attributes: [], autoreleaseFrequency: .workItem)
+    
+    var ballDetectRequest: VNCoreMLRequest?
+    
+    override func viewDidAppear(_ animated: Bool) {
+        print("view did appear")
+        useCoreMLModel()
+    }
+    
+    func useCoreMLModel() {
+        // Load the CoreML model
+        guard let model = try? VNCoreMLModel(for: best_v2(configuration: MLModelConfiguration()).model) else {
+            print("Failed to load CoreML model")
+            return
+        }
+        
+        // Create a request for the model
+        ballDetectRequest = VNCoreMLRequest(model: model)
+        ballDetectRequest!.imageCropAndScaleOption = .scaleFit
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        print("view did load")
         checkPermission()
         
         sessionQueue.async { [unowned self] in
             guard permissionGranted else { return }
             setupCaptureSession()
-            captureSession.startRunning()
+            print("Session running")
         }
     }
     
@@ -40,7 +64,7 @@ class ViewController: UIViewController {
         }
     }
     
-    func setupCaptureSession() {
+    func setupCaptureSession(){
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
         
@@ -76,6 +100,26 @@ class ViewController: UIViewController {
             previewLayer.connection?.videoRotationAngle = 0
         }
         
+        let dataOutput = AVCaptureVideoDataOutput()
+        if captureSession.canAddOutput(dataOutput) {
+            captureSession.addOutput(dataOutput)
+            // Add a video data output
+            dataOutput.alwaysDiscardsLateVideoFrames = true
+            dataOutput.videoSettings = [
+                String(kCVPixelBufferPixelFormatTypeKey): Int(kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
+            ]
+            dataOutput.setSampleBufferDelegate(self, queue: videoDataOutputQueue)
+        } else {
+            
+        }
+        let captureConnection = dataOutput.connection(with: .video)
+        captureConnection?.preferredVideoStabilizationMode = .standard
+        // Always process the frames
+        captureConnection?.isEnabled = true
+        captureSession.commitConfiguration()
+                
+        captureSession.startRunning()
+        
         DispatchQueue.main.async { [weak self] in
             self?.view.layer.sublayers?.removeAll(where: { $0 is AVCaptureVideoPreviewLayer })
             self?.view.layer.addSublayer(self!.previewLayer)
@@ -87,6 +131,34 @@ class ViewController: UIViewController {
             self.currentCameraPosition = (self.currentCameraPosition == .back) ? .front : .back
             self.setupCaptureSession()
         }
+    }
+    
+    
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        print("handle image")
+        
+        guard let ballDetectRequest = ballDetectRequest else {
+            print("ball detect not yet running")
+            return
+        }
+        do {
+            let visionHandler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: .right, options: [:])
+            try visionHandler.perform([ballDetectRequest])
+            if let results = ballDetectRequest.results as? [VNDetectedObjectObservation] {
+                print("ball detected")
+                
+                
+                // Filter out classification results with low confidence
+                let filteredResults = results.filter { $0.confidence > 0.8 }
+                // Since the model is trained to detect only one object class (game board)
+                // there is no need to look at labels. If there is at least one result - we got the board.
+                
+                print(filteredResults)
+            }
+        } catch {
+            print(error)
+        }
+
     }
 }
 

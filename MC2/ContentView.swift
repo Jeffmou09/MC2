@@ -12,15 +12,6 @@ struct ContentView: View {
     @State private var viewController: ViewController?
     @State private var showSplash = true
     
-    func basketMl() {
-        do {
-            let config = MLModelConfiguration()
-            _ = try best(configuration: config)
-        } catch {
-            print("Failed to load model: \(error.localizedDescription)")
-        }
-    }
-    
     var body: some View {
         ZStack{
             if showSplash {
@@ -36,7 +27,6 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            basketMl()
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                 withAnimation {
                     self.showSplash = false
