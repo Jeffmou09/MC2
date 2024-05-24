@@ -15,6 +15,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                                                      attributes: [], autoreleaseFrequency: .workItem)
     
     var ballDetectRequest: VNCoreMLRequest?
+    var boundingBoxLayers = [CAShapeLayer]()
     
     override func viewDidAppear(_ animated: Bool) {
         print("view did appear")
@@ -145,20 +146,48 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             let visionHandler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: .right, options: [:])
             try visionHandler.perform([ballDetectRequest])
             if let results = ballDetectRequest.results as? [VNDetectedObjectObservation] {
-                print("ball detected")
-                
                 
                 // Filter out classification results with low confidence
                 let filteredResults = results.filter { $0.confidence > 0.8 }
-                // Since the model is trained to detect only one object class (game board)
-                // there is no need to look at labels. If there is at least one result - we got the board.
-                
-                print(filteredResults)
+                DispatchQueue.main.async {
+                    self.clearBoundingBoxes()
+                    for result in filteredResults {
+                        self.drawBoundingBox(for: result)
+                        print("ball detected")
+                    }
+                }
             }
         } catch {
             print(error)
         }
-
+    }
+    
+    func drawBoundingBox(for observation: VNDetectedObjectObservation) {
+        let boundingBox = observation.boundingBox
+        print(boundingBox)
+        let size = view.bounds.size
+        
+        // Convert the bounding box coordinates to the view's coordinate system
+        let origin = CGPoint(x: boundingBox.minX * size.width, y: (1 - boundingBox.maxY) * size.height)
+        let width = boundingBox.width * size.width
+        let height = boundingBox.height * size.height
+        
+        // Create the CGRect for the bounding box
+        let boundingBoxRect = CGRect(origin: origin, size: CGSize(width: width, height: height))
+        let boundingBoxLayer = CAShapeLayer()
+        boundingBoxLayer.frame = boundingBoxRect
+        boundingBoxLayer.borderColor = UIColor.red.cgColor
+        boundingBoxLayer.borderWidth = 2.0
+        
+        view.layer.addSublayer(boundingBoxLayer)
+        boundingBoxLayers.append(boundingBoxLayer)
+    }
+        
+    func clearBoundingBoxes() {
+        for layer in boundingBoxLayers {
+            layer.removeFromSuperlayer()
+        }
+        boundingBoxLayers.removeAll()
     }
 }
 
