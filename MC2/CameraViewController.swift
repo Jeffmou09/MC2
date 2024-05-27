@@ -11,14 +11,13 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     private var previewLayer = AVCaptureVideoPreviewLayer()
     var screenRect: CGRect! = nil
     private var currentCameraPosition: AVCaptureDevice.Position = .back
-    private let videoDataOutputQueue = DispatchQueue(label: "CameraFeedDataOutput", qos: .userInitiated,
-                                                     attributes: [], autoreleaseFrequency: .workItem)
+    private let videoDataOutputQueue = DispatchQueue(label: "CameraFeedDataOutput", qos: .userInitiated, attributes: [], autoreleaseFrequency: .workItem)
     
     var ballDetectRequest: VNCoreMLRequest?
     
     override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
         print("view did appear")
-        useCoreMLModel()
     }
     
     func useCoreMLModel() {
@@ -39,10 +38,12 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         checkPermission()
         
         sessionQueue.async { [unowned self] in
-            guard permissionGranted else { return }
-            setupCaptureSession()
+            guard self.permissionGranted else { return }
+            self.setupCaptureSession()
             print("Session running")
         }
+        
+        useCoreMLModel()
     }
     
     func checkPermission() {
@@ -53,18 +54,28 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             requestPermission()
         default:
             permissionGranted = false
+            // Handle the case where permission is denied
+            DispatchQueue.main.async {
+                self.showPermissionDeniedAlert()
+            }
         }
     }
     
     func requestPermission() {
         sessionQueue.suspend()
         AVCaptureDevice.requestAccess(for: .video) { [unowned self] granted in
-            permissionGranted = granted
-            sessionQueue.resume()
+            self.permissionGranted = granted
+            self.sessionQueue.resume()
         }
     }
     
-    func setupCaptureSession(){
+    func showPermissionDeniedAlert() {
+        let alert = UIAlertController(title: "Camera Permission Denied", message: "Please enable camera access in settings to use this feature.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        self.present(alert, animated: true, completion: nil)
+    }
+    
+    func setupCaptureSession() {
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
         
@@ -95,9 +106,9 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         previewLayer.videoGravity = .resizeAspectFill
         
         if currentCameraPosition == .front {
-            previewLayer.connection?.videoRotationAngle = 180
+            previewLayer.connection?.videoOrientation = .landscapeLeft
         } else {
-            previewLayer.connection?.videoRotationAngle = 0
+            previewLayer.connection?.videoOrientation = .landscapeRight
         }
         
         let dataOutput = AVCaptureVideoDataOutput()
@@ -109,9 +120,8 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                 String(kCVPixelBufferPixelFormatTypeKey): Int(kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
             ]
             dataOutput.setSampleBufferDelegate(self, queue: videoDataOutputQueue)
-        } else {
-            
         }
+        
         let captureConnection = dataOutput.connection(with: .video)
         captureConnection?.preferredVideoStabilizationMode = .standard
         // Always process the frames
@@ -122,7 +132,9 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         
         DispatchQueue.main.async { [weak self] in
             self?.view.layer.sublayers?.removeAll(where: { $0 is AVCaptureVideoPreviewLayer })
-            self?.view.layer.addSublayer(self!.previewLayer)
+            if let previewLayer = self?.previewLayer {
+                self?.view.layer.addSublayer(previewLayer)
+            }
         }
     }
     
@@ -133,7 +145,6 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         }
     }
     
-    
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         print("handle image")
         
@@ -141,24 +152,66 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             print("ball detect not yet running")
             return
         }
+        
         do {
             let visionHandler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: .right, options: [:])
             try visionHandler.perform([ballDetectRequest])
             if let results = ballDetectRequest.results as? [VNDetectedObjectObservation] {
                 print("ball detected")
                 
-                
                 // Filter out classification results with low confidence
                 let filteredResults = results.filter { $0.confidence > 0.8 }
-                // Since the model is trained to detect only one object class (game board)
-                // there is no need to look at labels. If there is at least one result - we got the board.
                 
-                print(filteredResults)
+                DispatchQueue.main.async { [weak self] in
+                    self?.drawBoundingBoxes(for: filteredResults)
+                }
             }
         } catch {
-            print(error)
+            print("Error performing Vision request: \(error)")
         }
-
+    }
+    
+    private func drawBoundingBoxes(for results: [VNDetectedObjectObservation]) {
+        // Remove any existing bounding boxes
+        self.view.layer.sublayers?.removeAll(where: { $0 is CAShapeLayer })
+        
+        for result in results {
+            let boundingBox = result.boundingBox
+            let convertedBoundingBox = self.previewLayer.layerRectConverted(fromMetadataOutputRect: boundingBox)
+            let squareBoundingBox = self.convertToSquare(boundingBox: convertedBoundingBox)
+            let shapeLayer = self.createBoundingBoxLayer(with: squareBoundingBox)
+            self.view.layer.addSublayer(shapeLayer)
+            
+            // Get the four points around the bounding box
+            let points = self.getFourPoints(from: squareBoundingBox)
+            print("Bounding box points: \(points)")
+        }
+    }
+    
+    private func convertToSquare(boundingBox: CGRect) -> CGRect {
+        let width = max(boundingBox.width, boundingBox.height)
+        let height = width
+        
+        let x = boundingBox.midX - width / 2
+        let y = boundingBox.midY - height / 2
+        
+        return CGRect(x: x, y: y, width: width, height: height)
+    }
+    
+    private func createBoundingBoxLayer(with rect: CGRect) -> CAShapeLayer {
+        let shapeLayer = CAShapeLayer()
+        shapeLayer.frame = rect
+        shapeLayer.borderColor = UIColor.red.cgColor
+        shapeLayer.borderWidth = 2.0
+        return shapeLayer
+    }
+    
+    private func getFourPoints(from rect: CGRect) -> [CGPoint] {
+        let topLeft = CGPoint(x: rect.minX, y: rect.minY)
+        let topRight = CGPoint(x: rect.maxX, y: rect.minY)
+        let bottomLeft = CGPoint(x: rect.minX, y: rect.maxY)
+        let bottomRight = CGPoint(x: rect.maxX, y: rect.maxY)
+        return [topLeft, topRight, bottomLeft, bottomRight]
     }
 }
 
@@ -175,3 +228,4 @@ struct HostedViewController: UIViewControllerRepresentable {
     
     func updateUIViewController(_ uiViewController: UIViewControllerType, context: Context) {}
 }
+
