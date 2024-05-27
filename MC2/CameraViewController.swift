@@ -14,6 +14,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     private let videoDataOutputQueue = DispatchQueue(label: "CameraFeedDataOutput", qos: .userInitiated, attributes: [], autoreleaseFrequency: .workItem)
     
     var ballDetectRequest: VNCoreMLRequest?
+    var boundingBoxLayers = [CAShapeLayer]()
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)

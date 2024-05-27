@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bucket
+   uuid = "E1769AC7-CFD5-4DD5-B78A-8FF8EE8F5FAC"
+   type = "1"
+   version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "55BB247C-875E-4B2F-87AD-774DB6F3DF7E"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "MC2/CameraViewController.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "167"
+            endingLineNumber = "167"
+            landmarkName = "drawBoundingBox(for:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "55BB247C-875E-4B2F-87AD-774DB6F3DF7E - cd80cdd2cefb2315"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "MC2.ViewController.drawBoundingBox(for: __C.VNDetectedObjectObservation) -&gt; ()"
+                  moduleName = "MC2"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jefferson/Documents/Challenge/MC2/MC2/CameraViewController.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "167"
+                  endingLineNumber = "167"
+                  offsetFromSymbolStart = "228">
+               </Location>
+               <Location
+                  uuid = "55BB247C-875E-4B2F-87AD-774DB6F3DF7E - cd80cdd2cefb2315"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "MC2.ViewController.drawBoundingBox(for: __C.VNDetectedObjectObservation) -&gt; ()"
+                  moduleName = "MC2"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jefferson/Documents/Challenge/MC2/MC2/CameraViewController.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "167"
+                  endingLineNumber = "167"
+                  offsetFromSymbolStart = "412">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "71733EAC-2FF1-4E23-93C7-75FDF4DD99D4"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "MC2/CameraViewController.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "168"
+            endingLineNumber = "168"
+            landmarkName = "drawBoundingBox(for:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
+</Bucket>
