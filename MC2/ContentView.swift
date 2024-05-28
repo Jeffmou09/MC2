@@ -43,6 +43,7 @@ struct CameraView: View {
     @State private var attemptShot = 0
     @State private var progressTime = 0
     @State private var isRunning = false
+    @State private var alert = false
     
     var hours : Int {
         progressTime / 3600
@@ -59,62 +60,83 @@ struct CameraView: View {
     var body: some View {
         ZStack{
             HStack{
-                VStack{
-                    Button(action: {
-                        
-                    }, label: {
-                        Image("history")
-                    })
-                    Spacer()
-                }
-                .padding(.top, 40)
-                
                 Spacer()
                 VStack{
                     Text(String(format: "%02d:%02d:%02d", hours, minutes, seconds))
-                        .font(.system(size: 50))
+                        .font(.system(size: 35))
+                        .foregroundStyle(Color.white)
                         .padding(.top)
                     
                     Spacer()
                    
+                    if isRunning == true {
+                        Text("\(madeShot) / \(attemptShot)")
+                            .font(.system(size: 170))
+                            .padding(.bottom, 50)
+                            .opacity(0.25)
+                    }
+                    
+                    Spacer()
                 }
                 Spacer()
             }
             HStack{
                 Spacer()
                 VStack{
-                    Button(action: {
-                        viewController?.switchCamera()
-                    }, label: {
-                        Image("balik")
-                    })
-                    .padding(.top, 40)
+                    if isRunning == false {
+                        Button(action: {
+                            viewController?.switchCamera()
+                        }, label: {
+                            Image("balik")
+                        })
+                    }
                     
                     Spacer()
                     
                     Button(action: {
-                        if !isRunning {
+                        if isRunning == false {
                             startTimer()
                         } else {
                             resetTimer()
+                            alert = true
                         }
                     }, label: {
                         ZStack {
+                            if isRunning == false {
+                                Circle()
+                                    .tint(.red)
+                                    .frame(width: 62, height: 62)
+                            } else {
+                                Rectangle()
+                                    .tint(.red)
+                                    .frame(width: 37, height: 37)
+                                    .cornerRadius(3.0)
+                            }
                             Circle()
-                                .tint(.white)
-                                .frame(width: 60, height: 60)
-                            
-                            Circle()
-                                .stroke(.white)
-                                .frame(width: 65, height: 65)
+                                .stroke(.white, lineWidth: 5)
+                                .frame(width: 75, height: 75)
+                                .padding(.bottom, 2)
                         }
                     })
-                    .padding(.bottom, 60)
                     
                     Spacer()
-                    
+                    if isRunning == false {
+                        Button(action: {
+                            
+                        }, label: {
+                            Image("history")
+                        })
+                    }
                 }
+                .padding(.top, 20)
             }
+        }
+        .alert(isPresented: $alert) {
+            Alert(
+                title: Text("Your Score"),
+                message: Text("\(madeShot) / \(attemptShot)"),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
     
