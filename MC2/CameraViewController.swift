@@ -146,14 +146,12 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         do {
             let visionHandler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: .downMirrored, options: [:])
             try visionHandler.perform([ballDetectRequest])
-            if let results = ballDetectRequest.results as? [VNDetectedObjectObservation] {
-                print("ball detected")
-                
+            if let results = ballDetectRequest.results as? [VNRecognizedObjectObservation] {
                 // Filter out classification results with low confidence
                 let filteredResults = results.filter { $0.confidence > 0.5 }
                 
                 DispatchQueue.main.async { [weak self] in
-                    self?.drawBoundingBoxes(for: filteredResults)
+                    self?.handleResult(for: filteredResults)
                 }
             }
         } catch {
@@ -161,21 +159,28 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         }
     }
     
-    private func drawBoundingBoxes(for results: [VNDetectedObjectObservation]) {
+    private func handleResult(for results: [VNRecognizedObjectObservation]) {
+        for result in results {
+            let labels = result.labels.first?.identifier
+            let confidence = result.labels.first?.confidence
+            print("Label: \(labels ?? "Unknown"), Confidence: \(confidence ?? 0)")
+            
+            drawBoundingBoxes(for: result)
+        }
+    }
+    
+    private func drawBoundingBoxes(for result: VNRecognizedObjectObservation) {
         // Remove any existing bounding boxes
         self.view.layer.sublayers?.removeAll(where: { $0 is CAShapeLayer })
+        let boundingBox = result.boundingBox
+        let convertedBoundingBox = self.previewLayer.layerRectConverted(fromMetadataOutputRect: boundingBox)
+        let squareBoundingBox = self.convertToSquare(boundingBox: convertedBoundingBox)
+        let shapeLayer = self.createBoundingBoxLayer(with: squareBoundingBox)
+        self.view.layer.addSublayer(shapeLayer)
         
-        for result in results {
-            let boundingBox = result.boundingBox
-            let convertedBoundingBox = self.previewLayer.layerRectConverted(fromMetadataOutputRect: boundingBox)
-            let squareBoundingBox = self.convertToSquare(boundingBox: convertedBoundingBox)
-            let shapeLayer = self.createBoundingBoxLayer(with: squareBoundingBox)
-            self.view.layer.addSublayer(shapeLayer)
-            
-            // Get the four points around the bounding box
-            let points = self.getFourPoints(from: squareBoundingBox)
-            print("Bounding box points: \(points)")
-        }
+        // Get the four points around the bounding box
+        let points = self.getFourPoints(from: squareBoundingBox)
+        print("Bounding box points: \(points)")
     }
     
     private func convertToSquare(boundingBox: CGRect) -> CGRect {
