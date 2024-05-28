@@ -76,11 +76,7 @@ struct CameraView: View {
                         .padding(.top)
                     
                     Spacer()
-                    
-                    ZStack{
-                        
-                        Text("Total Score \(madeShot) / \(attemptShot)")
-                    }
+                   
                 }
                 Spacer()
             }
@@ -100,7 +96,7 @@ struct CameraView: View {
                         if !isRunning {
                             startTimer()
                         } else {
-                            stopTimer()
+                            resetTimer()
                         }
                     }, label: {
                         ZStack {
@@ -117,9 +113,6 @@ struct CameraView: View {
                     
                     Spacer()
                     
-                    Button(action: resetTimer) {
-                        Text("Reset")
-                    }
                 }
             }
         }

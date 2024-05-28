@@ -142,45 +142,63 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             print("ball detect not yet running")
             return
         }
+        
         do {
-            let visionHandler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: .right, options: [:])
+            let visionHandler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: .downMirrored, options: [:])
             try visionHandler.perform([ballDetectRequest])
             if let results = ballDetectRequest.results as? [VNDetectedObjectObservation] {
+                print("ball detected")
                 
                 // Filter out classification results with low confidence
                 let filteredResults = results.filter { $0.confidence > 0.8 }
-                DispatchQueue.main.async {
-                    self.clearBoundingBoxes()
-                    for result in filteredResults {
-                        self.drawBoundingBox(for: result)
-                        print("ball detected")
-                    }
+                
+                DispatchQueue.main.async { [weak self] in
+                    self?.drawBoundingBoxes(for: filteredResults)
                 }
             }
         } catch {
-            print(error)
+            print("Error performing Vision request: \(error)")
         }
     }
     
-    func drawBoundingBox(for observation: VNDetectedObjectObservation) {
-        let boundingBox = observation.boundingBox
-        print(boundingBox)
-        let size = view.bounds.size
+    private func drawBoundingBoxes(for results: [VNDetectedObjectObservation]) {
+        // Remove any existing bounding boxes
+        self.view.layer.sublayers?.removeAll(where: { $0 is CAShapeLayer })
         
-        // Convert the bounding box coordinates to the view's coordinate system
-        let origin = CGPoint(x: boundingBox.minX * size.width, y: (1 - boundingBox.maxY) * size.height)
-        let width = boundingBox.width * size.width
-        let height = boundingBox.height * size.height
+        for result in results {
+            let boundingBox = result.boundingBox
+            let convertedBoundingBox = self.previewLayer.layerRectConverted(fromMetadataOutputRect: boundingBox)
+            let squareBoundingBox = self.convertToSquare(boundingBox: convertedBoundingBox)
+            let shapeLayer = self.createBoundingBoxLayer(with: squareBoundingBox)
+            self.view.layer.addSublayer(shapeLayer)
+            
+            // Get the four points around the bounding box
+            let points = self.getFourPoints(from: squareBoundingBox)
+            print("Bounding box points: \(points)")
+        }
+    }
+    
+    private func convertToSquare(boundingBox: CGRect) -> CGRect {
+        let width = max(boundingBox.width, boundingBox.height)
+        let height = width
         
-        // Create the CGRect for the bounding box
-        let boundingBoxRect = CGRect(origin: origin, size: CGSize(width: width, height: height))
-        let boundingBoxLayer = CAShapeLayer()
-        boundingBoxLayer.frame = boundingBoxRect
-        boundingBoxLayer.borderColor = UIColor.red.cgColor
-        boundingBoxLayer.borderWidth = 2.0
-        
-        view.layer.addSublayer(boundingBoxLayer)
-        boundingBoxLayers.append(boundingBoxLayer)
+        return CGRect(x: boundingBox.minX, y: boundingBox.minY, width: width, height: height)
+    }
+    
+    private func createBoundingBoxLayer(with rect: CGRect) -> CAShapeLayer {
+        let shapeLayer = CAShapeLayer()
+        shapeLayer.frame = rect
+        shapeLayer.borderColor = UIColor.red.cgColor
+        shapeLayer.borderWidth = 2.0
+        return shapeLayer
+    }
+    
+    private func getFourPoints(from rect: CGRect) -> [CGPoint] {
+        let topLeft = CGPoint(x: rect.minX, y: rect.minY)
+        let topRight = CGPoint(x: rect.maxX, y: rect.minY)
+        let bottomLeft = CGPoint(x: rect.minX, y: rect.maxY)
+        let bottomRight = CGPoint(x: rect.maxX, y: rect.maxY)
+        return [topLeft, topRight, bottomLeft, bottomRight]
     }
         
     func clearBoundingBoxes() {
