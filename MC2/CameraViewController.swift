@@ -150,7 +150,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                 print("ball detected")
                 
                 // Filter out classification results with low confidence
-                let filteredResults = results.filter { $0.confidence > 0.8 }
+                let filteredResults = results.filter { $0.confidence > 0.5 }
                 
                 DispatchQueue.main.async { [weak self] in
                     self?.drawBoundingBoxes(for: filteredResults)

@@ -18,11 +18,12 @@ struct ContentView: View {
                 SplashScreenView()
                     .transition(.opacity)
             } else {
-                ZStack {
-                    HostedViewController(viewController: $viewController)
-                        .ignoresSafeArea()
-                    
-                    CameraView(viewController: $viewController)
+                NavigationStack {
+                    ZStack {
+                        HostedViewController(viewController: $viewController)
+                            .ignoresSafeArea()
+                        CameraView(viewController: $viewController)
+                    }
                 }
             }
         }
@@ -58,85 +59,85 @@ struct CameraView: View {
     @State private var timer: Timer?
     
     var body: some View {
-        ZStack{
-            HStack{
-                Spacer()
-                VStack{
-                    Text(String(format: "%02d:%02d:%02d", hours, minutes, seconds))
-                        .font(.system(size: 35))
-                        .foregroundStyle(Color.white)
-                        .padding(.top)
-                    
+            ZStack{
+                HStack{
                     Spacer()
-                   
-                    if isRunning == true {
-                        Text("\(madeShot) / \(attemptShot)")
-                            .font(.system(size: 170))
-                            .padding(.bottom, 50)
-                            .opacity(0.25)
+                    VStack{
+                        Text(String(format: "%02d:%02d:%02d", hours, minutes, seconds))
+                            .font(.system(size: 35))
+                            .foregroundStyle(Color.white)
+                            .padding(.top)
+                        
+                        Spacer()
+                       
+                        if isRunning == true {
+                            Text("\(madeShot) / \(attemptShot)")
+                                .font(.system(size: 170))
+                                .padding(.bottom, 50)
+                                .opacity(0.5)
+                        }
+                        
+                        Spacer()
                     }
-                    
                     Spacer()
                 }
-                Spacer()
-            }
-            HStack{
-                Spacer()
-                VStack{
-                    if isRunning == false {
-                        Button(action: {
-                            viewController?.switchCamera()
-                        }, label: {
-                            Image("balik")
-                        })
-                    }
-                    
+                HStack{
                     Spacer()
-                    
-                    Button(action: {
+                    VStack{
                         if isRunning == false {
-                            startTimer()
-                        } else {
-                            resetTimer()
-                            alert = true
+                            Button(action: {
+                                viewController?.switchCamera()
+                            }, label: {
+                                Image("balik")
+                            })
                         }
-                    }, label: {
-                        ZStack {
-                            if isRunning == false {
-                                Circle()
-                                    .tint(.red)
-                                    .frame(width: 62, height: 62)
-                            } else {
-                                Rectangle()
-                                    .tint(.red)
-                                    .frame(width: 37, height: 37)
-                                    .cornerRadius(3.0)
-                            }
-                            Circle()
-                                .stroke(.white, lineWidth: 5)
-                                .frame(width: 75, height: 75)
-                                .padding(.bottom, 2)
-                        }
-                    })
-                    
-                    Spacer()
-                    if isRunning == false {
+                        
+                        Spacer()
+                        
                         Button(action: {
-                            
+                            if isRunning == false {
+                                startTimer()
+                            } else {
+                                resetTimer()
+                                alert = true
+                            }
                         }, label: {
-                            Image("history")
+                            ZStack {
+                                if isRunning == false {
+                                    Circle()
+                                        .tint(.red)
+                                        .frame(width: 62, height: 62)
+                                } else {
+                                    Rectangle()
+                                        .tint(.red)
+                                        .frame(width: 37, height: 37)
+                                        .cornerRadius(3.0)
+                                }
+                                Circle()
+                                    .stroke(.white, lineWidth: 5)
+                                    .frame(width: 75, height: 75)
+                                    .padding(.bottom, 2)
+                            }
                         })
+                        
+                        Spacer()
+                        if isRunning == false {
+                            NavigationLink(destination: History()) {
+                                Image("history")
+                            }
+                        }
                     }
+                    .padding(.top, 20)
                 }
-                .padding(.top, 20)
             }
-        }
-        .alert(isPresented: $alert) {
-            Alert(
-                title: Text("Your Score"),
-                message: Text("\(madeShot) / \(attemptShot)"),
-                dismissButton: .default(Text("OK"))
-            )
+            .background(.clear)
+            .alert(isPresented: $alert) {
+                Alert(
+                    title: Text("Your Score"),
+                    message: Text("\(madeShot) / \(attemptShot)"),
+                    dismissButton: .default(Text("OK"))
+                )
+            
         }
     }
     
@@ -160,5 +161,5 @@ struct CameraView: View {
 }
 
 #Preview {
-    ContentView()
+    CameraView(viewController: .constant(ViewController()))
 }

@@ -9,7 +9,35 @@ import SwiftUI
 
 struct History: View {
     var body: some View {
-        Text("halo")
+        NavigationView {
+            VStack{
+                List{
+                    HStack{
+                        Image("basketmerah")
+                        VStack{
+                            Text("Date :")
+                            Text("Score :")
+                        }
+                    }
+                    HStack{
+                        Image("basketkuning")
+                        VStack{
+                            Text("Date :")
+                            Text("Score :")
+                        }
+                    }
+                    HStack{
+                        Image("basketijo")
+                        VStack{
+                            Text("Date :")
+                            Text("Score :")
+                        }
+                    }
+
+                }
+            }
+            .navigationTitle("History")
+        }
     }
 }
 
