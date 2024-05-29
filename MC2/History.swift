@@ -6,11 +6,19 @@
 //
 
 import SwiftUI
+import AVKit
 
 struct History: View {
+    @Binding var url: URL?
+    
     var body: some View {
         NavigationView {
             VStack{
+                if let url = url {
+                    VideoPlayer(player: AVPlayer(url: url))
+                        .frame(height: 300)
+                }
+                
                 List{
                     HStack{
                         Image("basketmerah")
@@ -42,5 +50,11 @@ struct History: View {
 }
 
 #Preview {
-    History()
+    struct HistoryPreview: View {
+        @State private var url: URL? = URL(string: "https://www.example.com")!
+        var body: some View {
+            History(url: $url)
+        }
+    }
+    return HistoryPreview()
 }

@@ -6,13 +6,26 @@
 //
 
 import SwiftUI
+import ReplayKit
 
-struct Record: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+extension View {
+    
+    func startRecording(enableMic: Bool = false, completion: @escaping (Error?)->()) {
+        let recorder = RPScreenRecorder.shared()
+        
+        recorder.isMicrophoneEnabled = false
+        
+        recorder.startRecording(handler: completion)
     }
-}
-
-#Preview {
-    Record()
+    
+    func stopRecording() async throws->URL {
+        let name = UUID().uuidString + ".mov"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        
+        let recorder = RPScreenRecorder.shared()
+        
+        try await recorder.stopRecording(withOutput: url)
+        
+        return url
+    }
 }

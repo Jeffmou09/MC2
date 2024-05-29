@@ -43,8 +43,9 @@ struct CameraView: View {
     @State private var madeShot = 0
     @State private var attemptShot = 0
     @State private var progressTime = 0
-    @State private var isRunning = false
     @State private var alert = false
+    @State private var isRecording: Bool = false
+    @State var url: URL?
     
     var hours : Int {
         progressTime / 3600
@@ -70,7 +71,7 @@ struct CameraView: View {
                         
                         Spacer()
                        
-                        if isRunning == true {
+                        if isRecording == true {
                             Text("\(madeShot) / \(attemptShot)")
                                 .font(.system(size: 170))
                                 .padding(.bottom, 50)
@@ -84,7 +85,7 @@ struct CameraView: View {
                 HStack{
                     Spacer()
                     VStack{
-                        if isRunning == false {
+                        if isRecording == false {
                             Button(action: {
                                 viewController?.switchCamera()
                             }, label: {
@@ -95,24 +96,48 @@ struct CameraView: View {
                         Spacer()
                         
                         Button(action: {
-                            if isRunning == false {
-                                startTimer()
-                            } else {
-                                resetTimer()
-                                alert = true
-                            }
+                           
                         }, label: {
                             ZStack {
-                                if isRunning == false {
-                                    Circle()
-                                        .tint(.red)
-                                        .frame(width: 62, height: 62)
-                                } else {
-                                    Rectangle()
-                                        .tint(.red)
-                                        .frame(width: 37, height: 37)
-                                        .cornerRadius(3.0)
-                                }
+                                Button(action: {
+                                    if isRecording{
+                                        Task {
+                                            do{
+                                                self.url = try await stopRecording()
+                                                print(self.url ?? "")
+                                                isRecording = false
+                                            }
+                                            catch{
+                                                print(error.localizedDescription)
+                                            }
+                                        }
+                                        
+                                        resetTimer()
+                                    } else {
+                                        startRecording {error in
+                                            if let error = error {
+                                                print(error.localizedDescription)
+                                                return
+                                            }
+                                            
+                                            isRecording = true
+                                        }
+                                        
+                                        startTimer()
+                                    }
+                                }, label: {
+                                    if !isRecording{
+                                        Circle()
+                                            .tint(.red)
+                                            .frame(width: 62, height: 62)
+                                    } else {
+                                        Rectangle()
+                                            .tint(.red)
+                                            .frame(width: 37, height: 37)
+                                            .cornerRadius(3.0)
+                                    }
+                                })
+                
                                 Circle()
                                     .stroke(.white, lineWidth: 5)
                                     .frame(width: 75, height: 75)
@@ -121,8 +146,8 @@ struct CameraView: View {
                         })
                         
                         Spacer()
-                        if isRunning == false {
-                            NavigationLink(destination: History()) {
+                        if isRecording == false {
+                            NavigationLink(destination: History(url: $url)) {
                                 Image("history")
                             }
                         }
@@ -142,14 +167,14 @@ struct CameraView: View {
     }
     
     func startTimer() {
-           isRunning = true
+            isRecording = true
            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
                progressTime += 1
            }
        }
        
        func stopTimer() {
-           isRunning = false
+           isRecording = false
            timer?.invalidate()
            timer = nil
        }
