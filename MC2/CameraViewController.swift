@@ -24,10 +24,11 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     func useCoreMLModel() {
         // Load the CoreML model
-        guard let model = try? VNCoreMLModel(for: best_v2(configuration: MLModelConfiguration()).model) else {
+        guard let model = try? VNCoreMLModel(for: best_v2(configuration: .init()).model) else {
             print("Failed to load CoreML model")
             return
         }
+        model.featureProvider = ThresholdProvider()
         
         // Create a request for the model
         ballDetectRequest = VNCoreMLRequest(model: model)
@@ -118,7 +119,6 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         // Always process the frames
         captureConnection?.isEnabled = true
         captureSession.commitConfiguration()
-                
         captureSession.startRunning()
         
         DispatchQueue.main.async { [weak self] in
@@ -148,10 +148,13 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             try visionHandler.perform([ballDetectRequest])
             if let results = ballDetectRequest.results as? [VNRecognizedObjectObservation] {
                 // Filter out classification results with low confidence
-                let filteredResults = results.filter { $0.confidence > 0.5 }
-                
                 DispatchQueue.main.async { [weak self] in
-                    self?.handleResult(for: filteredResults)
+                    // Remove any existing bounding boxes and labels
+                    self?.view.layer.sublayers?.removeAll(where: { $0 is CAShapeLayer })
+                    self?.view.layer.sublayers?.removeAll(where: { $0 is CATextLayer })
+                    
+                    // handle the filtered results
+                    self?.handleResult(for: results)
                 }
             }
         } catch {
@@ -160,28 +163,41 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     }
     
     private func handleResult(for results: [VNRecognizedObjectObservation]) {
+        //TODO: handle score
         for result in results {
-            let labels = result.labels.first?.identifier
-            let confidence = result.labels.first?.confidence
-            print("Label: \(labels ?? "Unknown"), Confidence: \(confidence ?? 0)")
-            
             drawBoundingBoxes(for: result)
         }
     }
     
     private func drawBoundingBoxes(for result: VNRecognizedObjectObservation) {
-        // Remove any existing bounding boxes
-        self.view.layer.sublayers?.removeAll(where: { $0 is CAShapeLayer })
         let boundingBox = result.boundingBox
         let convertedBoundingBox = self.previewLayer.layerRectConverted(fromMetadataOutputRect: boundingBox)
         let squareBoundingBox = self.convertToSquare(boundingBox: convertedBoundingBox)
+        
+        // Create the bounding box shape layer
         let shapeLayer = self.createBoundingBoxLayer(with: squareBoundingBox)
         self.view.layer.addSublayer(shapeLayer)
         
         // Get the four points around the bounding box
         let points = self.getFourPoints(from: squareBoundingBox)
         print("Bounding box points: \(points)")
+        
+        // Create a text layer for the label
+        let textLayer = CATextLayer()
+        textLayer.frame = squareBoundingBox
+        textLayer.foregroundColor = UIColor.magenta.cgColor
+        textLayer.alignmentMode = .center
+        textLayer.fontSize = 12
+        
+        let labelText = "\(result.labels.first?.identifier ?? "Unknown") \(String(format: "%.2f", result.labels.first?.confidence ?? 0))"
+        
+        // Set the text layer content
+        textLayer.string = labelText
+        
+        // Add the text layer to the sublayers
+        self.view.layer.addSublayer(textLayer)
     }
+    
     
     private func convertToSquare(boundingBox: CGRect) -> CGRect {
         let width = max(boundingBox.width, boundingBox.height)
@@ -193,8 +209,9 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     private func createBoundingBoxLayer(with rect: CGRect) -> CAShapeLayer {
         let shapeLayer = CAShapeLayer()
         shapeLayer.frame = rect
-        shapeLayer.borderColor = UIColor.red.cgColor
-        shapeLayer.borderWidth = 2.0
+        shapeLayer.borderColor = UIColor.magenta.cgColor
+        shapeLayer.borderWidth = 3
+        shapeLayer.cornerRadius = 5
         return shapeLayer
     }
     
@@ -204,13 +221,6 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         let bottomLeft = CGPoint(x: rect.minX, y: rect.maxY)
         let bottomRight = CGPoint(x: rect.maxX, y: rect.maxY)
         return [topLeft, topRight, bottomLeft, bottomRight]
-    }
-        
-    func clearBoundingBoxes() {
-        for layer in boundingBoxLayers {
-            layer.removeFromSuperlayer()
-        }
-        boundingBoxLayers.removeAll()
     }
 }
 
