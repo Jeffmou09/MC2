@@ -7,45 +7,49 @@
 
 import SwiftUI
 import AVKit
+import SwiftData
 
 struct History: View {
     @Binding var url: URL?
+    @State private var selectedURL: URL?
+    @Environment(\.modelContext) private var context
+    @Query private var items: [DataItem]
     
     var body: some View {
         NavigationView {
             VStack{
-                if let url = url {
-                    VideoPlayer(player: AVPlayer(url: url))
-                        .frame(height: 300)
-                }
-                
                 List{
-                    HStack{
-                        Image("basketmerah")
-                        VStack{
-                            Text("Date :")
-                            Text("Score :")
+                    ForEach(items) { item in
+                        HStack{
+                            Text(item.score)
+                            Text("\(item.percentage)%") 
+                            Text(item.date, formatter: dateFormatter)
+                            if item.url != nil {
+                                VideoPlayer(player: AVPlayer(url: (item.url ?? nil)!))
+                                    .frame(width: 200, height: 100)
+                            }
                         }
                     }
-                    HStack{
-                        Image("basketkuning")
-                        VStack{
-                            Text("Date :")
-                            Text("Score :")
+                    .onDelete { indexes in
+                        for index in indexes {
+                            deleteItem(items[index])
                         }
                     }
-                    HStack{
-                        Image("basketijo")
-                        VStack{
-                            Text("Date :")
-                            Text("Score :")
-                        }
-                    }
-
                 }
             }
             .navigationTitle("History")
         }
+    }
+    
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter
+    }
+    
+    func deleteItem(_ item:DataItem) {
+        context.delete(item)
     }
 }
 

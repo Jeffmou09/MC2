@@ -7,6 +7,7 @@
 
 import CoreML
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
     @State private var viewController: ViewController?
@@ -38,10 +39,13 @@ struct ContentView: View {
 }
 
 struct CameraView: View {
+    @Environment(\.modelContext) private var context
+    @Query private var items: [DataItem]
+    
     @Binding var viewController: ViewController?
     
-    @State private var madeShot = 0
-    @State private var attemptShot = 0
+    @State private var madeShot = 5
+    @State private var attemptShot = 10
     @State private var progressTime = 0
     @State private var alert = false
     @State private var isRecording: Bool = false
@@ -111,7 +115,7 @@ struct CameraView: View {
                                                 print(error.localizedDescription)
                                             }
                                         }
-                                        
+                                        addItem()
                                         resetTimer()
                                     } else {
                                         startRecording {error in
@@ -183,6 +187,13 @@ struct CameraView: View {
            progressTime = 0
            stopTimer()
        }
+    
+    func addItem() {
+        // Pastikan attemptShot tidak nol untuk menghindari pembagian dengan nol
+        let percentage = attemptShot > 0 ? (madeShot * 100 / attemptShot) : 0
+        let item = DataItem(score: "\(madeShot) / \(attemptShot)", percentage: percentage, date: Date(), url: url)
+        context.insert(item)
+    }
 }
 
 #Preview {
