@@ -4,6 +4,19 @@ import AVFoundation
 import CoreML
 import Vision
 
+func bestCaptureDevice(position: AVCaptureDevice.Position) -> AVCaptureDevice {
+    if UserDefaults.standard.bool(forKey: "use_telephoto"), let device = AVCaptureDevice.default(.builtInTelephotoCamera, for: .video, position: position) {
+        return device
+    } else if let device = AVCaptureDevice.default(.builtInDualCamera, for: .video, position: position) {
+        return device
+    } else if let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position) {
+        return device
+    } else {
+        fatalError("Expected back camera device is not available.")
+    }
+}
+
+
 class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
     private var permissionGranted = false
     private var captureSession = AVCaptureSession()
@@ -13,9 +26,14 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     private var currentCameraPosition: AVCaptureDevice.Position = .back
     private let videoDataOutputQueue = DispatchQueue(label: "CameraFeedDataOutput", qos: .userInitiated,
                                                      attributes: [], autoreleaseFrequency: .workItem)
+    private lazy var videoDevice = bestCaptureDevice(position: currentCameraPosition)
     
     var ballDetectRequest: VNCoreMLRequest?
     var boundingBoxLayers = [CAShapeLayer]()
+    
+    let minimumZoom: CGFloat = 1.0
+    let maximumZoom: CGFloat = 10.0
+    var lastZoomFactor: CGFloat = 1.0
     
     override func viewDidAppear(_ animated: Bool) {
         print("view did appear")
@@ -32,13 +50,16 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         
         // Create a request for the model
         ballDetectRequest = VNCoreMLRequest(model: model)
-        ballDetectRequest!.imageCropAndScaleOption = .scaleFit
+        ballDetectRequest!.imageCropAndScaleOption = .scaleFill
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         print("view did load")
         checkPermission()
+        
+        let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(pinch(_:)))
+        view.addGestureRecognizer(pinchGesture)
         
         sessionQueue.async { [unowned self] in
             guard permissionGranted else { return }
@@ -70,10 +91,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
         
-        guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: currentCameraPosition) else {
-            print("\(currentCameraPosition == .front ? "Front" : "Back") camera not available.")
-            return
-        }
+        videoDevice = bestCaptureDevice(position: currentCameraPosition)
         
         guard let videoDeviceInput = try? AVCaptureDeviceInput(device: videoDevice) else {
             print("Could not create video device input.")
@@ -111,9 +129,8 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                 String(kCVPixelBufferPixelFormatTypeKey): Int(kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
             ]
             dataOutput.setSampleBufferDelegate(self, queue: videoDataOutputQueue)
-        } else {
-            
         }
+        
         let captureConnection = dataOutput.connection(with: .video)
         captureConnection?.preferredVideoStabilizationMode = .standard
         // Always process the frames
@@ -221,6 +238,23 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         let bottomLeft = CGPoint(x: rect.minX, y: rect.maxY)
         let bottomRight = CGPoint(x: rect.maxX, y: rect.maxY)
         return [topLeft, topRight, bottomLeft, bottomRight]
+    }
+    
+    @IBAction func pinch(_ pinch: UIPinchGestureRecognizer) {
+        let device = videoDevice
+        
+        do {
+            try device.lockForConfiguration()
+            defer { device.unlockForConfiguration() }
+            
+            let maxZoomFactor = device.activeFormat.videoMaxZoomFactor
+            let pinchVelocityDividerFactor: CGFloat = 5.0
+            
+            let desiredZoomFactor = device.videoZoomFactor + atan2(pinch.velocity, pinchVelocityDividerFactor)
+            device.videoZoomFactor = max(1.0, min(desiredZoomFactor, maxZoomFactor))
+        } catch {
+            print("Error locking configuration")
+        }
     }
 }
 
