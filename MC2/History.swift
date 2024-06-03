@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import AVKit
 import SwiftData
 
 struct History: View {
@@ -21,12 +20,19 @@ struct History: View {
                 List{
                     ForEach(items) { item in
                         HStack{
-                            Text(item.score)
-                            Text("\(item.percentage)%") 
-                            Text(item.date, formatter: dateFormatter)
-                            if item.url != nil {
-                                VideoPlayer(player: AVPlayer(url: (item.url ?? nil)!))
-                                    .frame(width: 200, height: 100)
+                            NavigationLink(destination: DetailHistory(item: item)) {
+                                HStack{
+                                    
+                                    
+                                    VStack{
+                                        Text(item.score)
+                                            .fontWeight(.bold)
+                                            .font(.system(size: 28))
+                                        Text(item.date, formatter: dateFormatter)
+                                            .fontWeight(.thin)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
                             }
                         }
                     }

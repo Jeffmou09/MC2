@@ -6,13 +6,33 @@
 //
 
 import SwiftUI
+import SwiftData
+import AVKit
 
 struct DetailHistory: View {
+    let item: DataItem
+
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        VStack{
+            if let videoURL = item.url {
+                VideoPlayer(player: AVPlayer(url: videoURL))
+                    .frame(height: 300)
+            } else {
+                Text("No video available")
+                    .padding()
+            }
+            
+            Text(item.date, formatter: dateFormatter)
+        }
+        .navigationTitle("Detail History")
+        .padding()
+    }
+    
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter
     }
 }
 
-#Preview {
-    DetailHistory()
-}

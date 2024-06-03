@@ -110,12 +110,12 @@ struct CameraView: View {
                                                 self.url = try await stopRecording()
                                                 print(self.url ?? "")
                                                 isRecording = false
+                                                addItem()
                                             }
                                             catch{
                                                 print(error.localizedDescription)
                                             }
                                         }
-                                        addItem()
                                         resetTimer()
                                     } else {
                                         startRecording {error in

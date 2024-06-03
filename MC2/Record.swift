@@ -22,12 +22,11 @@ extension View {
         let name = UUID().uuidString + ".mov"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         
-        // save in internal storage
-    
-        
         let recorder = RPScreenRecorder.shared()
         
         try await recorder.stopRecording(withOutput: url)
+        
+        print(url)
         
         return url
     }
