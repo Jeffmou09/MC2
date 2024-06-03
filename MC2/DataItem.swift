@@ -15,16 +15,18 @@ class DataItem: Identifiable {
     var percentage: Int
     var date: Date
     var url: URL?
+    var duration: Int
     
-    init(score: String, percentage: Int, date: Date, url: URL? = nil) {
-        self.id = UUID()
+    init(id: UUID = UUID(), score: String, percentage: Int, date: Date, url: URL? = nil, duration: Int = 0) {
+        self.id = id
         self.score = score
         self.percentage = percentage
         self.date = date
         self.url = url
+        self.duration = duration
     }
     
     convenience init(score: String) {
-        self.init(score: score, percentage: 0, date: Date(), url: nil)
+        self.init(score: score, percentage: 0, date: Date(), url: nil, duration: 0)
     }
 }

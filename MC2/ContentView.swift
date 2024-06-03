@@ -44,9 +44,10 @@ struct CameraView: View {
     
     @Binding var viewController: ViewController?
     
-    @State private var madeShot = 5
+    @State private var madeShot = 2
     @State private var attemptShot = 10
     @State private var progressTime = 0
+    @State private var durasi = 0
     @State private var alert = false
     @State private var isRecording: Bool = false
     @State var url: URL?
@@ -110,13 +111,13 @@ struct CameraView: View {
                                                 self.url = try await stopRecording()
                                                 print(self.url ?? "")
                                                 isRecording = false
+                                                resetTimer()
                                                 addItem()
                                             }
                                             catch{
                                                 print(error.localizedDescription)
                                             }
                                         }
-                                        resetTimer()
                                     } else {
                                         startRecording {error in
                                             if let error = error {
@@ -166,8 +167,10 @@ struct CameraView: View {
                     message: Text("\(madeShot) / \(attemptShot)"),
                     dismissButton: .default(Text("OK"))
                 )
-            
-        }
+            }
+            .onAppear {
+                durasi = 0
+            }
     }
     
     func startTimer() {
@@ -184,6 +187,7 @@ struct CameraView: View {
        }
        
        func resetTimer() {
+           durasi = progressTime
            progressTime = 0
            stopTimer()
        }
@@ -191,7 +195,7 @@ struct CameraView: View {
     func addItem() {
         // Pastikan attemptShot tidak nol untuk menghindari pembagian dengan nol
         let percentage = attemptShot > 0 ? (madeShot * 100 / attemptShot) : 0
-        let item = DataItem(score: "\(madeShot) / \(attemptShot)", percentage: percentage, date: Date(), url: url)
+        let item = DataItem(score: "\(madeShot) / \(attemptShot)", percentage: percentage, date: Date(), url: url, duration: durasi)
         context.insert(item)
     }
 }

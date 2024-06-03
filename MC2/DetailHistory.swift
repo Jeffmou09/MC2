@@ -23,6 +23,7 @@ struct DetailHistory: View {
             }
             
             Text(item.date, formatter: dateFormatter)
+            Text("\(item.duration) Seconds")
         }
         .navigationTitle("Detail History")
         .padding()
