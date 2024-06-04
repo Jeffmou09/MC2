@@ -11,12 +11,12 @@ struct SplashScreenView: View {
     var body: some View {
         ZStack {
             Rectangle()
-                .foregroundColor(.black)
+                .foregroundColor(.white)
                 .ignoresSafeArea()
             
-            Image(systemName: "basketball.fill")
-                .foregroundColor(.white)
-                .font(.system(size: 100))
+            Image("HoopScore")
+                .resizable()
+                .frame(width: 250, height: 250)
         }
     }
 }

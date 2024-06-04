@@ -51,8 +51,7 @@ struct History: View {
     
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
+        formatter.dateFormat = "dd MMM yyyy, h.mm a"
         return formatter
     }
     
