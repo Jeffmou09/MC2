@@ -4,29 +4,46 @@ import AVFoundation
 import CoreML
 import Vision
 
-func bestCaptureDevice(position: AVCaptureDevice.Position) -> AVCaptureDevice {
-    if UserDefaults.standard.bool(forKey: "use_telephoto"), let device = AVCaptureDevice.default(.builtInTelephotoCamera, for: .video, position: position) {
-        return device
-    } else if let device = AVCaptureDevice.default(.builtInDualCamera, for: .video, position: position) {
-        return device
-    } else if let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position) {
-        return device
-    } else {
-        fatalError("Expected back camera device is not available.")
+
+extension ViewController: VideoCaptureDelegate {
+    func videoCapture(_ capture: VideoCapture, didCaptureVideoFrame: CMSampleBuffer) {
+        predict(sampleBuffer: didCaptureVideoFrame)
     }
 }
 
+let mlModel = try! best_v4(configuration: .init()).model
 
-class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
+
+class ViewController: UIViewController {
     private var permissionGranted = false
-    private var captureSession = AVCaptureSession()
+//    private var captureSession = AVCaptureSession()
     private let sessionQueue = DispatchQueue(label: "sessionQueue")
-    private var previewLayer = AVCaptureVideoPreviewLayer()
+    private var videoPreview: UIView = UIView()
+    var videoCapture: VideoCapture!
+    var currentBuffer: CVPixelBuffer?
+
     var screenRect: CGRect! = nil
     private var currentCameraPosition: AVCaptureDevice.Position = .back
     private let videoDataOutputQueue = DispatchQueue(label: "CameraFeedDataOutput", qos: .userInitiated,
                                                      attributes: [], autoreleaseFrequency: .workItem)
-    private lazy var videoDevice = bestCaptureDevice(position: currentCameraPosition)
+    
+    var detector = try! VNCoreMLModel(for: mlModel)
+
+    lazy var visionRequest: VNCoreMLRequest = {
+        let request = VNCoreMLRequest(model: detector, completionHandler: {
+            [weak self] request, error in
+            self?.processObservations(for: request, error: error)
+        })
+        // NOTE: BoundingBoxView object scaling depends on request.imageCropAndScaleOption https://developer.apple.com/documentation/vision/vnimagecropandscaleoption
+        request.imageCropAndScaleOption = .scaleFill  // .scaleFit, .scaleFill, .centerCrop
+        return request
+    }()
+
+
+    
+    var boundingBoxViews = [BoundingBoxView]()
+    var colors: [String: UIColor] = [:]
+    var classLabels: [String] = []
     
     var ballDetectRequest: VNCoreMLRequest?
     var boundingBoxLayers = [CAShapeLayer]()
@@ -35,37 +52,75 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     let maximumZoom: CGFloat = 10.0
     var lastZoomFactor: CGFloat = 1.0
     
-    override func viewDidAppear(_ animated: Bool) {
-        print("view did appear")
-        useCoreMLModel()
+    func startVideo() {
+        videoCapture = VideoCapture()
+        videoCapture.delegate = self
+        
+        videoCapture.setUp(sessionPreset: .photo) { success in
+            // .hd4K3840x2160 or .photo (4032x3024)  Warning: 4k may not work on all devices i.e. 2019 iPod
+            if success {
+                // Add the video preview into the UI.
+                if let previewLayer = self.videoCapture.previewLayer {
+//                    self.videoPreview.layer.addSublayer(previewLayer)
+                    self.view.layer.addSublayer(previewLayer)
+                    previewLayer.frame = self.videoPreview.bounds  // resize preview layer
+                    previewLayer.connection?.videoRotationAngle = 0
+
+                    for box in self.boundingBoxViews {
+                        box.addToLayer(previewLayer)
+                    }
+
+                }
+
+                // Add the bounding box layers to the UI, on top of the video preview.
+
+                // Once everything is set up, we can start capturing live video.
+                self.videoCapture.start()
+            }
+        }
     }
     
-    func useCoreMLModel() {
-        // Load the CoreML model
-        guard let model = try? VNCoreMLModel(for: best_v2(configuration: .init()).model) else {
-            print("Failed to load CoreML model")
-            return
+    func processObservations(for request: VNRequest, error: Error?) {
+        DispatchQueue.main.async {
+            if let results = request.results as? [VNRecognizedObjectObservation] {
+                self.show(predictions: results)
+            } else {
+                self.show(predictions: [])
+            }
         }
-        model.featureProvider = ThresholdProvider()
-        
-        // Create a request for the model
-        ballDetectRequest = VNCoreMLRequest(model: model)
-        ballDetectRequest!.imageCropAndScaleOption = .scaleFill
     }
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
         print("view did load")
         checkPermission()
         
+        // video preview
+        videoPreview = UIView(frame: UIScreen.main.bounds)
+        videoPreview.translatesAutoresizingMaskIntoConstraints = false
+        videoPreview.frame = UIApplication.shared.keyWindow!.bounds
+                
+//        NSLayoutConstraint.activate([
+//            videoPreview.topAnchor.constraint(equalTo: view.layoutMarginsGuide.topAnchor),
+//            videoPreview.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+//            videoPreview.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+//            videoPreview.bottomAnchor.constraint(equalTo: view.layoutMarginsGuide.bottomAnchor),
+//        ])
+        
         let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(pinch(_:)))
         view.addGestureRecognizer(pinchGesture)
         
-        sessionQueue.async { [unowned self] in
-            guard permissionGranted else { return }
-            setupCaptureSession()
-            print("Session running")
-        }
+        
+//        sessionQueue.async { [unowned self] in
+//            guard permissionGranted else { return }
+//            setupCaptureSession()
+//            print("Session running")
+//        }
+        
+        setUpBoundingBoxViews()
+        startVideo()
+        print("Session running")
     }
     
     func checkPermission() {
@@ -87,161 +142,144 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         }
     }
     
-    func setupCaptureSession(){
-        captureSession.beginConfiguration()
-        defer { captureSession.commitConfiguration() }
-        
-        videoDevice = bestCaptureDevice(position: currentCameraPosition)
-        
-        guard let videoDeviceInput = try? AVCaptureDeviceInput(device: videoDevice) else {
-            print("Could not create video device input.")
-            return
+    func setUpBoundingBoxViews() {
+        // Ensure all bounding box views are initialized up to the maximum allowed.
+        while boundingBoxViews.count < 100 {
+            boundingBoxViews.append(BoundingBoxView())
         }
-        
-        captureSession.inputs.forEach { input in
-            captureSession.removeInput(input)
-        }
-        
-        guard captureSession.canAddInput(videoDeviceInput) else {
-            print("Could not add video device input to the session.")
-            return
-        }
-        captureSession.addInput(videoDeviceInput)
-        
-        screenRect = UIScreen.main.bounds
-        
-        previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-        previewLayer.frame = CGRect(x: 0, y: 0, width: screenRect.size.width, height: screenRect.size.height)
-        previewLayer.videoGravity = .resizeAspectFill
-        
-        if currentCameraPosition == .front {
-            previewLayer.connection?.videoRotationAngle = 180
-        } else {
-            previewLayer.connection?.videoRotationAngle = 0
-        }
-        
-        let dataOutput = AVCaptureVideoDataOutput()
-        if captureSession.canAddOutput(dataOutput) {
-            captureSession.addOutput(dataOutput)
-            // Add a video data output
-            dataOutput.alwaysDiscardsLateVideoFrames = true
-            dataOutput.videoSettings = [
-                String(kCVPixelBufferPixelFormatTypeKey): Int(kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
-            ]
-            dataOutput.setSampleBufferDelegate(self, queue: videoDataOutputQueue)
-        }
-        
-        let captureConnection = dataOutput.connection(with: .video)
-        captureConnection?.preferredVideoStabilizationMode = .standard
-        // Always process the frames
-        captureConnection?.isEnabled = true
-        captureSession.commitConfiguration()
-        captureSession.startRunning()
-        
-        DispatchQueue.main.async { [weak self] in
-            self?.view.layer.sublayers?.removeAll(where: { $0 is AVCaptureVideoPreviewLayer })
-            self?.view.layer.addSublayer(self!.previewLayer)
+        // Assign random colors to the classes.
+        for label in classLabels {
+            if colors[label] == nil {  // if key not in dict
+                colors[label] = UIColor(red: CGFloat.random(in: 0...1),
+                                        green: CGFloat.random(in: 0...1),
+                                        blue: CGFloat.random(in: 0...1),
+                                        alpha: 0.6)
+            }
         }
     }
     
     func switchCamera() {
         sessionQueue.async { [unowned self] in
             self.currentCameraPosition = (self.currentCameraPosition == .back) ? .front : .back
-            self.setupCaptureSession()
+//            self.setupCaptureSession()
         }
     }
     
-    
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        print("handle image")
-        
-        guard let ballDetectRequest = ballDetectRequest else {
-            print("ball detect not yet running")
-            return
-        }
-        
-        do {
-            let visionHandler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: .downMirrored, options: [:])
-            try visionHandler.perform([ballDetectRequest])
-            if let results = ballDetectRequest.results as? [VNRecognizedObjectObservation] {
-                // Filter out classification results with low confidence
-                DispatchQueue.main.async { [weak self] in
-                    // Remove any existing bounding boxes and labels
-                    self?.view.layer.sublayers?.removeAll(where: { $0 is CAShapeLayer })
-                    self?.view.layer.sublayers?.removeAll(where: { $0 is CATextLayer })
-                    
-                    // handle the filtered results
-                    self?.handleResult(for: results)
+    func predict(sampleBuffer: CMSampleBuffer) {
+        if currentBuffer == nil, let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+            currentBuffer = pixelBuffer
+
+            /// - Tag: MappingOrientation
+            // The frame is always oriented based on the camera sensor,
+            // so in most cases Vision needs to rotate it for the model to work as expected.
+            let imageOrientation: CGImagePropertyOrientation
+            switch UIDevice.current.orientation {
+            case .portrait:
+                imageOrientation = .up
+            case .portraitUpsideDown:
+                imageOrientation = .down
+            case .landscapeLeft:
+                imageOrientation = .left
+            case .landscapeRight:
+                imageOrientation = .right
+            case .unknown:
+                print("The device orientation is unknown, the predictions may be affected")
+                fallthrough
+            default:
+                imageOrientation = .up
+            }
+            
+
+            // Invoke a VNRequestHandler with that image
+            let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: imageOrientation, options: [:])
+            if UIDevice.current.orientation != .faceUp {  // stop if placed down on a table
+                do {
+                    try handler.perform([visionRequest])
+                } catch {
+                    print(error)
                 }
             }
-        } catch {
-            print("Error performing Vision request: \(error)")
+
+            currentBuffer = nil
         }
     }
-    
-    private func handleResult(for results: [VNRecognizedObjectObservation]) {
-        //TODO: handle score
-        for result in results {
-            drawBoundingBoxes(for: result)
+
+    func show(predictions: [VNRecognizedObjectObservation]) {
+        let width = videoPreview.bounds.width  // 375 pix
+        let height = videoPreview.bounds.height  // 812 pix
+
+        // ratio = videoPreview AR divided by sessionPreset AR
+        var ratio: CGFloat = 1.0
+        if videoCapture.captureSession.sessionPreset == .photo {
+            ratio = (height / width) / (4.0 / 3.0)  // .photo
+        } else {
+            ratio = (height / width) / (16.0 / 9.0)  // .hd4K3840x2160, .hd1920x1080, .hd1280x720 etc.
+        }
+
+        for i in 0..<boundingBoxViews.count {
+            // TODO: make threshold of total detected items
+            if i < predictions.count && i < 100 {
+                let prediction = predictions[i]
+
+                var rect = prediction.boundingBox  // normalized xywh, origin lower left
+                switch UIDevice.current.orientation {
+                case .portraitUpsideDown:
+                    rect = CGRect(x: 1.0 - rect.origin.x - rect.width,
+                            y: 1.0 - rect.origin.y - rect.height,
+                            width: rect.width,
+                            height: rect.height)
+                case .landscapeLeft:
+                    rect = CGRect(x: rect.origin.y,
+                            y: 1.0 - rect.origin.x - rect.width,
+                            width: rect.height,
+                            height: rect.width)
+                case .landscapeRight:
+                    rect = CGRect(x: 1.0 - rect.origin.y - rect.height,
+                            y: rect.origin.x,
+                            width: rect.height,
+                            height: rect.width)
+                case .unknown:
+                    print("The device orientation is unknown, the predictions may be affected")
+                    fallthrough
+                default: break
+                }
+
+                if ratio >= 1 { // iPhone ratio = 1.218
+                    let offset = (1 - ratio) * (0.5 - rect.minX)
+                    let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: offset, y: -1)
+                    rect = rect.applying(transform)
+                    rect.size.width *= ratio
+                } else { // iPad ratio = 0.75
+                    let offset = (ratio - 1) * (0.5 - rect.maxY)
+                    let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: offset - 1)
+                    rect = rect.applying(transform)
+                    rect.size.height /= ratio * 1.75
+                }
+
+                // Scale normalized to pixels [375, 812] [width, height]
+                rect = VNImageRectForNormalizedRect(rect, Int(width), Int(height))
+
+                // The labels array is a list of VNClassificationObservation objects,
+                // with the highest scoring class first in the list.
+                let bestClass = prediction.labels[0].identifier
+                let confidence = prediction.labels[0].confidence
+                // print(confidence, rect)  // debug (confidence, xywh) with xywh origin top left (pixels)
+
+                // Show the bounding box.
+                boundingBoxViews[i].show(frame: rect,
+                        label: String(format: "%@ %.1f", bestClass, confidence * 100),
+                        color: colors[bestClass] ?? UIColor.white,
+                        alpha: CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9))  // alpha 0 (transparent) to 1 (opaque) for conf threshold 0.2 to 1.0)
+            } else {
+                boundingBoxViews[i].hide()
+            }
         }
     }
+
     
-    private func drawBoundingBoxes(for result: VNRecognizedObjectObservation) {
-        let boundingBox = result.boundingBox
-        let convertedBoundingBox = self.previewLayer.layerRectConverted(fromMetadataOutputRect: boundingBox)
-        let squareBoundingBox = self.convertToSquare(boundingBox: convertedBoundingBox)
-        
-        // Create the bounding box shape layer
-        let shapeLayer = self.createBoundingBoxLayer(with: squareBoundingBox)
-        self.view.layer.addSublayer(shapeLayer)
-        
-        // Get the four points around the bounding box
-        let points = self.getFourPoints(from: squareBoundingBox)
-        print("Bounding box points: \(points)")
-        
-        // Create a text layer for the label
-        let textLayer = CATextLayer()
-        textLayer.frame = squareBoundingBox
-        textLayer.foregroundColor = UIColor.magenta.cgColor
-        textLayer.alignmentMode = .center
-        textLayer.fontSize = 12
-        
-        let labelText = "\(result.labels.first?.identifier ?? "Unknown") \(String(format: "%.2f", result.labels.first?.confidence ?? 0))"
-        
-        // Set the text layer content
-        textLayer.string = labelText
-        
-        // Add the text layer to the sublayers
-        self.view.layer.addSublayer(textLayer)
-    }
-    
-    
-    private func convertToSquare(boundingBox: CGRect) -> CGRect {
-        let width = max(boundingBox.width, boundingBox.height)
-        let height = width
-        
-        return CGRect(x: boundingBox.minX, y: boundingBox.minY, width: width, height: height)
-    }
-    
-    private func createBoundingBoxLayer(with rect: CGRect) -> CAShapeLayer {
-        let shapeLayer = CAShapeLayer()
-        shapeLayer.frame = rect
-        shapeLayer.borderColor = UIColor.magenta.cgColor
-        shapeLayer.borderWidth = 3
-        shapeLayer.cornerRadius = 5
-        return shapeLayer
-    }
-    
-    private func getFourPoints(from rect: CGRect) -> [CGPoint] {
-        let topLeft = CGPoint(x: rect.minX, y: rect.minY)
-        let topRight = CGPoint(x: rect.maxX, y: rect.minY)
-        let bottomLeft = CGPoint(x: rect.minX, y: rect.maxY)
-        let bottomRight = CGPoint(x: rect.maxX, y: rect.maxY)
-        return [topLeft, topRight, bottomLeft, bottomRight]
-    }
     
     @IBAction func pinch(_ pinch: UIPinchGestureRecognizer) {
-        let device = videoDevice
+        let device = videoCapture.captureDevice
         
         do {
             try device.lockForConfiguration()

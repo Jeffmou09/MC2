@@ -21,7 +21,7 @@ class ThresholdProvider: MLFeatureProvider {
     /// - Parameters:
     ///   - iouThreshold: The IoU threshold for determining object overlap.
     ///   - confidenceThreshold: The minimum confidence for considering a detection valid.
-    init(iouThreshold: Double = 0.5, confidenceThreshold: Double = 0.5) {
+    init(iouThreshold: Double = 0.5, confidenceThreshold: Double = 0.25) {
         values = [
             "iouThreshold": MLFeatureValue(double: iouThreshold),
             "confidenceThreshold": MLFeatureValue(double: confidenceThreshold)
