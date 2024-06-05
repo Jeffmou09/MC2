@@ -175,13 +175,13 @@ class ViewController: UIViewController {
             let imageOrientation: CGImagePropertyOrientation
             switch UIDevice.current.orientation {
             case .portrait:
-                imageOrientation = .right
-            case .portraitUpsideDown:
-                imageOrientation = .left
-            case .landscapeLeft:
-                imageOrientation = .down
-            case .landscapeRight:
                 imageOrientation = .up
+            case .portraitUpsideDown:
+                imageOrientation = .down
+            case .landscapeLeft:
+                imageOrientation = .left
+            case .landscapeRight:
+                imageOrientation = .right
             case .unknown:
                 print("The device orientation is unknown, the predictions may be affected")
                 fallthrough
@@ -253,7 +253,7 @@ class ViewController: UIViewController {
                     let offset = (ratio - 1) * (0.5 - rect.maxY)
                     let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: offset - 1)
                     rect = rect.applying(transform)
-                    rect.size.height /= ratio
+                    rect.size.height /= ratio * 1.75
                 }
 
                 // Scale normalized to pixels [375, 812] [width, height]

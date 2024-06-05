@@ -16,11 +16,11 @@
 		8409747E2BF7054200AD36A4 /* MC2UITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8409747D2BF7054200AD36A4 /* MC2UITestsLaunchTests.swift */; };
 		8409748B2BFAE73800AD36A4 /* CameraViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8409748A2BFAE73800AD36A4 /* CameraViewController.swift */; };
 		840974982BFD78A100AD36A4 /* SplashScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840974972BFD78A100AD36A4 /* SplashScreenView.swift */; };
+		844EB8682C0EF9F000D2DECE /* best_v4.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 844EB8672C0EF9F000D2DECE /* best_v4.mlpackage */; };
 		84DCD2C72C0586B0003C437F /* History.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84DCD2C62C0586B0003C437F /* History.swift */; };
 		84DCD2C92C06C4A9003C437F /* Record.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84DCD2C82C06C4A9003C437F /* Record.swift */; };
 		84DCD2CF2C080750003C437F /* DataItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84DCD2CE2C080750003C437F /* DataItem.swift */; };
 		CE3FE60F2C0EACFF009135CA /* VideoCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3FE60E2C0EACFF009135CA /* VideoCapture.swift */; };
-		CE6252332C0D63B4001A5CEF /* best_v4.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = CE6252322C0D63B4001A5CEF /* best_v4.mlpackage */; };
 		CE6252352C0D6F11001A5CEF /* BoundingBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6252342C0D6F11001A5CEF /* BoundingBoxView.swift */; };
 		CE8A02502C06EE9700880680 /* ThresholdProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8A024F2C06EE9700880680 /* ThresholdProvider.swift */; };
 /* End PBXBuildFile section */
@@ -56,11 +56,11 @@
 		8409748A2BFAE73800AD36A4 /* CameraViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewController.swift; sourceTree = "<group>"; };
 		8409748C2BFAE7A900AD36A4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		840974972BFD78A100AD36A4 /* SplashScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenView.swift; sourceTree = "<group>"; };
+		844EB8672C0EF9F000D2DECE /* best_v4.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = best_v4.mlpackage; sourceTree = SOURCE_ROOT; };
 		84DCD2C62C0586B0003C437F /* History.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = History.swift; sourceTree = "<group>"; };
 		84DCD2C82C06C4A9003C437F /* Record.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Record.swift; sourceTree = "<group>"; };
 		84DCD2CE2C080750003C437F /* DataItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataItem.swift; sourceTree = "<group>"; };
 		CE3FE60E2C0EACFF009135CA /* VideoCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCapture.swift; sourceTree = "<group>"; };
-		CE6252322C0D63B4001A5CEF /* best_v4.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; name = best_v4.mlpackage; path = "../../basketball-ml/best_v4.mlpackage"; sourceTree = "<group>"; };
 		CE6252342C0D6F11001A5CEF /* BoundingBoxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoundingBoxView.swift; sourceTree = "<group>"; };
 		CE8A024F2C06EE9700880680 /* ThresholdProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ThresholdProvider.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -121,7 +121,7 @@
 				84DCD2CE2C080750003C437F /* DataItem.swift */,
 				84DCD2C62C0586B0003C437F /* History.swift */,
 				8409748A2BFAE73800AD36A4 /* CameraViewController.swift */,
-				CE6252322C0D63B4001A5CEF /* best_v4.mlpackage */,
+				844EB8672C0EF9F000D2DECE /* best_v4.mlpackage */,
 				840974642BF7054200AD36A4 /* Assets.xcassets */,
 				CE8A024F2C06EE9700880680 /* ThresholdProvider.swift */,
 				840974662BF7054200AD36A4 /* Preview Content */,
@@ -289,12 +289,12 @@
 				84DCD2CF2C080750003C437F /* DataItem.swift in Sources */,
 				840974982BFD78A100AD36A4 /* SplashScreenView.swift in Sources */,
 				CE6252352C0D6F11001A5CEF /* BoundingBoxView.swift in Sources */,
+				844EB8682C0EF9F000D2DECE /* best_v4.mlpackage in Sources */,
 				84DCD2C72C0586B0003C437F /* History.swift in Sources */,
 				CE8A02502C06EE9700880680 /* ThresholdProvider.swift in Sources */,
 				CE3FE60F2C0EACFF009135CA /* VideoCapture.swift in Sources */,
 				840974632BF7054000AD36A4 /* ContentView.swift in Sources */,
 				840974612BF7054000AD36A4 /* MC2App.swift in Sources */,
-				CE6252332C0D63B4001A5CEF /* best_v4.mlpackage in Sources */,
 				84DCD2C92C06C4A9003C437F /* Record.swift in Sources */,
 				8409748B2BFAE73800AD36A4 /* CameraViewController.swift in Sources */,
 			);
@@ -461,7 +461,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"MC2/Preview Content\"";
-				DEVELOPMENT_TEAM = Q754AP3J93;
+				DEVELOPMENT_TEAM = 4492BP5753;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MC2/Info.plist;
@@ -493,7 +493,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"MC2/Preview Content\"";
-				DEVELOPMENT_TEAM = Q754AP3J93;
+				DEVELOPMENT_TEAM = 4492BP5753;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MC2/Info.plist;
