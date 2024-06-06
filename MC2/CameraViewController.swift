@@ -23,6 +23,7 @@ class ViewController: UIViewController {
     var videoCapture: VideoCapture!
     var currentBuffer: CVPixelBuffer?
     private var rimRect: CGRect = CGRect()
+    private var toggleIncreaseAttempt = true
     
     private var currentCameraPosition: AVCaptureDevice.Position = .back
     
@@ -87,7 +88,7 @@ class ViewController: UIViewController {
         videoPreview = UIView(frame: UIScreen.main.bounds)
         videoPreview.translatesAutoresizingMaskIntoConstraints = false
         videoPreview.frame = UIApplication.shared.keyWindow!.bounds
-
+        
         let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(pinch(_:)))
         view.addGestureRecognizer(pinchGesture)
         
@@ -248,11 +249,53 @@ class ViewController: UIViewController {
                     self.rimRect = rect
                 }
                 
-                // Show the bounding box.
-                boundingBoxViews[i].show(frame: rect,
-                                         label: String(format: "%@ %.1f", bestClass, confidence * 100),
-                                         color: colors[bestClass] ?? UIColor.white,
-                                         alpha: CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9))  // alpha 0 (transparent) to 1 (opaque) for conf threshold 0.2 to 1.0)
+                // Calculate the center point of the bounding box
+                let centerX = rect.origin.x + rect.size.width / 2
+                let centerY = rect.origin.y + rect.size.height / 2
+                // Check if the center point is below Y = 50
+                if centerY < self.rimRect.origin.y {
+                    // increase total attempt
+                    if toggleIncreaseAttempt {
+                        self.increaseAttempt?()
+                    }
+                    // stop increasing total attempt if ball is still in the air
+                    self.toggleIncreaseAttempt = false
+                    
+                    let dotSize: CGFloat = 10
+                    let dotRect = CGRect(x: centerX - dotSize / 2, y: centerY - dotSize / 2, width: dotSize, height: dotSize)
+                    
+                    let shapeLayer = CAShapeLayer()
+                    let path = UIBezierPath(roundedRect: dotRect, cornerRadius: 6.0)  // Rounded rectangle for the bounding box
+                    shapeLayer.path = path.cgPath
+                    shapeLayer.strokeColor = CGColor(red: 255, green: 0, blue: 0, alpha: 1)
+                    shapeLayer.lineWidth = 4  // Set the stroke line width
+                    
+                    videoCapture.previewLayer?.addSublayer(shapeLayer)
+                    // Animate the shape layer opacity
+                    CATransaction.begin()
+                    CATransaction.setCompletionBlock {
+                        // Remove the shape layer after the animation completes
+                        shapeLayer.removeFromSuperlayer()
+                    }
+                    let animation = CABasicAnimation(keyPath: "opacity")
+                    animation.fromValue = 1.0
+                    animation.toValue = 0.0
+                    animation.duration = 5.0  // Set the duration to 5 seconds
+                    shapeLayer.add(animation, forKey: "opacityAnimation")
+                    CATransaction.commit()
+                    // Show the bounding box as before
+                    boundingBoxViews[i].show(frame: rect,
+                                             label: String(format: "%@ %.1f", bestClass, confidence * 100),
+                                             color: colors[bestClass] ?? UIColor.white,
+                                             alpha: CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9))
+                } else {
+                    // Show the bounding box as before
+                    self.toggleIncreaseAttempt = true // toggle can increase
+                    boundingBoxViews[i].show(frame: rect,
+                                             label: String(format: "%@ %.1f", bestClass, confidence * 100),
+                                             color: colors[bestClass] ?? UIColor.white,
+                                             alpha: CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9))
+                }
             } else {
                 boundingBoxViews[i].hide()
             }
@@ -260,19 +303,19 @@ class ViewController: UIViewController {
     }
     
     func checkScore(predictions: [VNRecognizedObjectObservation]) {
-      guard let basketballPrediction = predictions.first(where: { $0.labels[0].identifier == "basketball" }) else {
-          return
-      }
-      
-      let basketballRect = VNImageRectForNormalizedRect(basketballPrediction.boundingBox, Int(videoPreview.bounds.width), Int(videoPreview.bounds.height))
-      
-      // Check for intersection using CGRect methods
+        guard let basketballPrediction = predictions.first(where: { $0.labels[0].identifier == "basketball" }) else {
+            return
+        }
+        
+        let basketballRect = VNImageRectForNormalizedRect(basketballPrediction.boundingBox, Int(videoPreview.bounds.width), Int(videoPreview.bounds.height))
+        
+        // Check for intersection using CGRect methods
         if basketballRect.intersects(rimRect) {
-            increaseScore?()
-            print("masuk")
+            Task {
+                self.increaseScore?()
+            }
         }
     }
-
     
     @IBAction func pinch(_ pinch: UIPinchGestureRecognizer) {
         let device = videoCapture.captureDevice

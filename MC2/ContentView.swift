@@ -45,6 +45,8 @@ struct CameraView: View {
     @Binding var viewController: ViewController?
     
     @State private var madeShot = 0
+    // toggleScore prevent multiple score made on ball on the rim
+    @State private var toggleScore: Bool = true
     @State private var attemptShot = 0
     @State private var progressTime = 0
     @State private var durasi = 0
@@ -170,8 +172,15 @@ struct CameraView: View {
         }
         .onChange(of: viewController, { oldValue, newValue in
             viewController?.increaseScore = { [self] in
-                if isRecording {
+                if !isRecording {
+                    return
+                }
+                if toggleScore {
                     madeShot += 1
+                    toggleScore = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        toggleScore = true
+                    }
                 }
             }
             viewController?.increaseAttempt = { [self] in
