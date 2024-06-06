@@ -20,9 +20,9 @@
 		84DCD2C72C0586B0003C437F /* History.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84DCD2C62C0586B0003C437F /* History.swift */; };
 		84DCD2C92C06C4A9003C437F /* Record.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84DCD2C82C06C4A9003C437F /* Record.swift */; };
 		84DCD2CF2C080750003C437F /* DataItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84DCD2CE2C080750003C437F /* DataItem.swift */; };
+		84DCD2D12C0966EF003C437F /* DetailHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84DCD2D02C0966EF003C437F /* DetailHistory.swift */; };
 		CE3FE60F2C0EACFF009135CA /* VideoCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3FE60E2C0EACFF009135CA /* VideoCapture.swift */; };
 		CE6252352C0D6F11001A5CEF /* BoundingBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6252342C0D6F11001A5CEF /* BoundingBoxView.swift */; };
-		84DCD2D12C0966EF003C437F /* DetailHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84DCD2D02C0966EF003C437F /* DetailHistory.swift */; };
 		CE8A02502C06EE9700880680 /* ThresholdProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8A024F2C06EE9700880680 /* ThresholdProvider.swift */; };
 /* End PBXBuildFile section */
 
@@ -466,7 +466,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"MC2/Preview Content\"";
-				DEVELOPMENT_TEAM = 4492BP5753;
+				DEVELOPMENT_TEAM = Q754AP3J93;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MC2/Info.plist;
@@ -501,7 +501,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"MC2/Preview Content\"";
-				DEVELOPMENT_TEAM = 4492BP5753;
+				DEVELOPMENT_TEAM = Q754AP3J93;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MC2/Info.plist;
