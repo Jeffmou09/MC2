@@ -14,11 +14,15 @@ extension ViewController: VideoCaptureDelegate {
 let mlModel = try! best_v4(configuration: .init()).model
 
 class ViewController: UIViewController {
+    var increaseScore: (() -> Void)?
+    var increaseAttempt: (() -> Void)?
+    
     private var permissionGranted = false
     private let sessionQueue = DispatchQueue(label: "sessionQueue")
     private var videoPreview: UIView = UIView()
     var videoCapture: VideoCapture!
     var currentBuffer: CVPixelBuffer?
+    private var rimRect: CGRect = CGRect()
     
     private var currentCameraPosition: AVCaptureDevice.Position = .back
     
@@ -35,7 +39,6 @@ class ViewController: UIViewController {
     }()
     var boundingBoxViews = [BoundingBoxView]()
     var colors: [String: UIColor] = [:]
-    var classLabels: [String] = []
     
     let minimumZoom: CGFloat = 1.0
     let maximumZoom: CGFloat = 10.0
@@ -67,6 +70,7 @@ class ViewController: UIViewController {
         DispatchQueue.main.async {
             if let results = request.results as? [VNRecognizedObjectObservation] {
                 self.show(predictions: results)
+                self.checkScore(predictions: results)
             } else {
                 self.show(predictions: [])
             }
@@ -118,6 +122,12 @@ class ViewController: UIViewController {
         while boundingBoxViews.count < 100 {
             boundingBoxViews.append(BoundingBoxView())
         }
+        
+        // Retrieve class labels directly from the CoreML model's class labels, if available.
+        guard let classLabels = mlModel.modelDescription.classLabels as? [String] else {
+            fatalError("Class labels are missing from the model description")
+        }
+        
         // Assign random colors to the classes.
         for label in classLabels {
             if colors[label] == nil {  // if key not in dict
@@ -234,6 +244,10 @@ class ViewController: UIViewController {
                 let confidence = prediction.labels[0].confidence
                 // print(confidence, rect)  // debug (confidence, xywh) with xywh origin top left (pixels)
                 
+                if bestClass == "rim" {
+                    self.rimRect = rect
+                }
+                
                 // Show the bounding box.
                 boundingBoxViews[i].show(frame: rect,
                                          label: String(format: "%@ %.1f", bestClass, confidence * 100),
@@ -244,6 +258,21 @@ class ViewController: UIViewController {
             }
         }
     }
+    
+    func checkScore(predictions: [VNRecognizedObjectObservation]) {
+      guard let basketballPrediction = predictions.first(where: { $0.labels[0].identifier == "basketball" }) else {
+          return
+      }
+      
+      let basketballRect = VNImageRectForNormalizedRect(basketballPrediction.boundingBox, Int(videoPreview.bounds.width), Int(videoPreview.bounds.height))
+      
+      // Check for intersection using CGRect methods
+        if basketballRect.intersects(rimRect) {
+            increaseScore?()
+            print("masuk")
+        }
+    }
+
     
     @IBAction func pinch(_ pinch: UIPinchGestureRecognizer) {
         let device = videoCapture.captureDevice
