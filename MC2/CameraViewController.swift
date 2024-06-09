@@ -11,7 +11,7 @@ extension ViewController: VideoCaptureDelegate {
     }
 }
 
-let mlModel = try! best_v4(configuration: .init()).model
+let mlModel = try! best_v12(configuration: .init()).model
 
 class ViewController: UIViewController {
     var increaseScore: (() -> Void)?
@@ -70,6 +70,7 @@ class ViewController: UIViewController {
     func processObservations(for request: VNRequest, error: Error?) {
         DispatchQueue.main.async {
             if let results = request.results as? [VNRecognizedObjectObservation] {
+                self.handleRimLocation(predictions: results)
                 self.show(predictions: results)
                 self.checkScore(predictions: results)
             } else {
@@ -243,17 +244,12 @@ class ViewController: UIViewController {
                 // with the highest scoring class first in the list.
                 let bestClass = prediction.labels[0].identifier
                 let confidence = prediction.labels[0].confidence
-                // print(confidence, rect)  // debug (confidence, xywh) with xywh origin top left (pixels)
-                
-                if bestClass == "rim" {
-                    self.rimRect = rect
-                }
                 
                 // Calculate the center point of the bounding box
                 let centerX = rect.origin.x + rect.size.width / 2
                 let centerY = rect.origin.y + rect.size.height / 2
                 // Check if the center point is below Y = 50
-                if centerY < self.rimRect.origin.y {
+                if centerY < self.rimRect.origin.y && bestClass == "basketball" {
                     // increase total attempt
                     if toggleIncreaseAttempt {
                         self.increaseAttempt?()
@@ -298,6 +294,77 @@ class ViewController: UIViewController {
                 }
             } else {
                 boundingBoxViews[i].hide()
+            }
+        }
+    }
+    
+    // handleRimLocation get the highest Y value of the multiple rim predictions
+    // so if there are multiple rim predictions, the highest Y value will be used (closest to the user)
+    func handleRimLocation(predictions: [VNRecognizedObjectObservation]) {
+        let width = videoPreview.bounds.width  // 375 pix
+        let height = videoPreview.bounds.height  // 812 pix
+        
+        // ratio = videoPreview AR divided by sessionPreset AR
+        var ratio: CGFloat = 1.0
+        if videoCapture.captureSession.sessionPreset == .photo {
+            ratio = (height / width) / (4.0 / 3.0)  // .photo
+        } else {
+            ratio = (height / width) / (16.0 / 9.0)  // .hd4K3840x2160, .hd1920x1080, .hd1280x720 etc.
+        }
+        var currentHighestRimRect = CGRect()
+        for i in 0..<boundingBoxViews.count {
+            if i < predictions.count && i < 100 {
+                let prediction = predictions[i]
+                
+                var rect = prediction.boundingBox  // normalized xywh, origin lower left
+                switch UIDevice.current.orientation {
+                case .portraitUpsideDown:
+                    rect = CGRect(x: 1.0 - rect.origin.x - rect.width,
+                                  y: 1.0 - rect.origin.y - rect.height,
+                                  width: rect.width,
+                                  height: rect.height)
+                case .landscapeLeft:
+                    rect = CGRect(x: rect.origin.y,
+                                  y: 1.0 - rect.origin.x - rect.width,
+                                  width: rect.height,
+                                  height: rect.width)
+                case .landscapeRight:
+                    rect = CGRect(x: 1.0 - rect.origin.y - rect.height,
+                                  y: rect.origin.x,
+                                  width: rect.height,
+                                  height: rect.width)
+                case .unknown:
+                    print("The device orientation is unknown, the predictions may be affected")
+                    fallthrough
+                default: break
+                }
+                
+                if ratio >= 1 { // iPhone ratio = 1.218
+                    let offset = (1 - ratio) * (0.5 - rect.minX)
+                    let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: offset, y: -1)
+                    rect = rect.applying(transform)
+                    rect.size.width *= ratio
+                } else { // iPad ratio = 0.75
+                    let offset = (ratio - 1) * (0.5 - rect.maxY)
+                    let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: offset - 1)
+                    rect = rect.applying(transform)
+                    rect.size.height /= ratio * 1.75
+                }
+
+                // Scale normalized to pixels [375, 812] [width, height]
+                rect = VNImageRectForNormalizedRect(prediction.boundingBox, Int(width), Int(height))
+                
+                // The labels array is a list of VNClassificationObservation objects,
+                // with the highest scoring class first in the list.
+                let bestClass = prediction.labels[0].identifier
+                
+                if bestClass == "rim" {
+                    if rect.origin.y > currentHighestRimRect.origin.y {
+                        currentHighestRimRect = rect
+                    }
+                }
+                
+                self.rimRect = currentHighestRimRect
             }
         }
     }

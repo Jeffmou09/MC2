@@ -115,6 +115,8 @@ struct CameraView: View {
                                             isRecording = false
                                             resetTimer()
                                             addItem()
+                                            attemptShot = 0
+                                            madeShot = 0
                                         }
                                         catch{
                                             print(error.localizedDescription)
@@ -178,7 +180,7 @@ struct CameraView: View {
                 if toggleScore {
                     madeShot += 1
                     toggleScore = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                         toggleScore = true
                     }
                 }
