@@ -252,45 +252,50 @@ class ViewController: UIViewController {
                 if centerY < self.rimRect.origin.y && bestClass == "basketball" {
                     // increase total attempt
                     if toggleIncreaseAttempt {
+                        print("INCREASE ATTEMPT")
                         self.increaseAttempt?()
                     }
+                    
                     // stop increasing total attempt if ball is still in the air
+                    print("SET FALSE ATTEMPT")
                     self.toggleIncreaseAttempt = false
                     
-                    let dotSize: CGFloat = 10
-                    let dotRect = CGRect(x: centerX - dotSize / 2, y: centerY - dotSize / 2, width: dotSize, height: dotSize)
-                    
-                    let shapeLayer = CAShapeLayer()
-                    let path = UIBezierPath(roundedRect: dotRect, cornerRadius: 6.0)  // Rounded rectangle for the bounding box
-                    shapeLayer.path = path.cgPath
-                    shapeLayer.strokeColor = CGColor(red: 255, green: 0, blue: 0, alpha: 1)
-                    shapeLayer.lineWidth = 4  // Set the stroke line width
-                    
-                    videoCapture.previewLayer?.addSublayer(shapeLayer)
-                    // Animate the shape layer opacity
-                    CATransaction.begin()
-                    CATransaction.setCompletionBlock {
-                        // Remove the shape layer after the animation completes
-                        shapeLayer.removeFromSuperlayer()
-                    }
-                    let animation = CABasicAnimation(keyPath: "opacity")
-                    animation.fromValue = 1.0
-                    animation.toValue = 0.0
-                    animation.duration = 5.0  // Set the duration to 5 seconds
-                    shapeLayer.add(animation, forKey: "opacityAnimation")
-                    CATransaction.commit()
+//                    let dotSize: CGFloat = 10
+//                    let dotRect = CGRect(x: centerX - dotSize / 2, y: centerY - dotSize / 2, width: dotSize, height: dotSize)
+//                    
+//                    let shapeLayer = CAShapeLayer()
+//                    let path = UIBezierPath(roundedRect: dotRect, cornerRadius: 6.0)  // Rounded rectangle for the bounding box
+//                    shapeLayer.path = path.cgPath
+//                    shapeLayer.strokeColor = CGColor(red: 255, green: 0, blue: 0, alpha: 1)
+//                    shapeLayer.lineWidth = 4  // Set the stroke line width
+//                    
+//                    videoCapture.previewLayer?.addSublayer(shapeLayer)
+//                    // Animate the shape layer opacity
+//                    CATransaction.begin()
+//                    CATransaction.setCompletionBlock {
+//                        // Remove the shape layer after the animation completes
+//                        shapeLayer.removeFromSuperlayer()
+//                    }
+//                    let animation = CABasicAnimation(keyPath: "opacity")
+//                    animation.fromValue = 1.0
+//                    animation.toValue = 0.0
+//                    animation.duration = 5.0  // Set the duration to 5 seconds
+//                    shapeLayer.add(animation, forKey: "opacityAnimation")
+//                    CATransaction.commit()
                     // Show the bounding box as before
                     boundingBoxViews[i].show(frame: rect,
                                              label: String(format: "%@ %.1f", bestClass, confidence * 100),
                                              color: colors[bestClass] ?? UIColor.white,
                                              alpha: CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9))
+                    
                 } else {
                     // Show the bounding box as before
                     self.toggleIncreaseAttempt = true // toggle can increase
-                    boundingBoxViews[i].show(frame: rect,
+                    self.boundingBoxViews[i].show(frame: rect,
                                              label: String(format: "%@ %.1f", bestClass, confidence * 100),
-                                             color: colors[bestClass] ?? UIColor.white,
+                                                  color: self.colors[bestClass] ?? UIColor.white,
                                              alpha: CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9))
+
                 }
             } else {
                 boundingBoxViews[i].hide()
@@ -311,7 +316,7 @@ class ViewController: UIViewController {
         } else {
             ratio = (height / width) / (16.0 / 9.0)  // .hd4K3840x2160, .hd1920x1080, .hd1280x720 etc.
         }
-        var currentHighestRimRect = CGRect()
+        var currentHighestRimRect: CGRect = CGRect(x: 0, y: 0, width: 10, height: 10)
         for i in 0..<boundingBoxViews.count {
             if i < predictions.count && i < 100 {
                 let prediction = predictions[i]
@@ -363,7 +368,7 @@ class ViewController: UIViewController {
                         currentHighestRimRect = rect
                     }
                 }
-                
+                print(currentHighestRimRect)
                 self.rimRect = currentHighestRimRect
             }
         }

@@ -46,6 +46,7 @@ struct CameraView: View {
     
     @State private var madeShot = 0
     // toggleScore prevent multiple score made on ball on the rim
+    @State private var toggleAttempt: Bool = true
     @State private var toggleScore: Bool = true
     @State private var attemptShot = 0
     @State private var progressTime = 0
@@ -123,15 +124,15 @@ struct CameraView: View {
                                         }
                                     }
                                 } else {
-                                    startRecording {error in
-                                        if let error = error {
-                                            print(error.localizedDescription)
-                                            return
-                                        }
-                                        
-                                        isRecording = true
-                                    }
-                                    
+//                                    startRecording {error in
+//                                        if let error = error {
+//                                            print(error.localizedDescription)
+//                                            return
+//                                        }
+//                                        
+//                                        isRecording = true
+//                                    }
+                                    addAttempt()
                                     startTimer()
                                 }
                             }, label: {
@@ -185,14 +186,29 @@ struct CameraView: View {
                     }
                 }
             }
-            viewController?.increaseAttempt = { [self] in
-                if isRecording {
-                    attemptShot += 1
-                }
-            }
+//            viewController?.increaseAttempt = { [self] in
+//                if isRecording {
+//                    attemptShot += 1
+//                }
+//            }
         })
         .onAppear {
             durasi = 0
+        }
+    }
+    
+    func addAttempt() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 7) {
+            attemptShot += 1
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 14) {
+            attemptShot += 1
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 28) {
+            attemptShot += 1
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 38) {
+            attemptShot += 1
         }
     }
     
