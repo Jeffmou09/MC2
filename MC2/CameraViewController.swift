@@ -17,6 +17,11 @@ class ViewController: UIViewController {
     var increaseScore: (() -> Void)?
     var increaseAttempt: (() -> Void)?
     
+    private var lastUpdatedRim = CGRectZero
+    private var lastUpdatedRimConfidence: Float = 0
+    private var lastUpdatedBall = CGRectZero
+    private var lastUpdatedBallConfidence: Float = 0
+
     private var permissionGranted = false
     private let sessionQueue = DispatchQueue(label: "sessionQueue")
     private var videoPreview: UIView = UIView()
@@ -185,6 +190,46 @@ class ViewController: UIViewController {
         }
     }
     
+    func processRect(item: CGRect, ratio: CGFloat) -> CGRect{
+        var rect = item
+        switch UIDevice.current.orientation {
+            case .portraitUpsideDown:
+                rect = CGRect(x: 1.0 - rect.origin.x - rect.width,
+                              y: 1.0 - rect.origin.y - rect.height,
+                              width: rect.width,
+                              height: rect.height)
+            case .landscapeLeft:
+                rect = CGRect(x: rect.origin.y,
+                              y: 1.0 - rect.origin.x - rect.width,
+                              width: rect.height,
+                              height: rect.width)
+            case .landscapeRight:
+                rect = CGRect(x: 1.0 - rect.origin.y - rect.height,
+                              y: rect.origin.x,
+                              width: rect.height,
+                              height: rect.width)
+            case .unknown:
+                print("The device orientation is unknown, the predictions may be affected")
+                fallthrough
+            default: break
+        }
+        
+        if ratio >= 1 { // iPhone ratio = 1.218
+            let offset = (1 - ratio) * (0.5 - rect.minX)
+            let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: offset, y: -1)
+            rect = rect.applying(transform)
+            rect.size.width *= ratio
+        } else { // iPad ratio = 0.75
+            let offset = (ratio - 1) * (0.5 - rect.maxY)
+            let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: offset - 1)
+            rect = rect.applying(transform)
+            rect.size.height /= ratio * 1.75
+        }
+        
+        // Scale normalized to pixels [375, 812] [width, height]
+        return VNImageRectForNormalizedRect(rect, Int(videoPreview.bounds.width), Int(videoPreview.bounds.height))
+    }
+    
     func show(predictions: [VNRecognizedObjectObservation]) {
         let width = videoPreview.bounds.width  // 375 pix
         let height = videoPreview.bounds.height  // 812 pix
@@ -197,109 +242,82 @@ class ViewController: UIViewController {
             ratio = (height / width) / (16.0 / 9.0)  // .hd4K3840x2160, .hd1920x1080, .hd1280x720 etc.
         }
         
-        for i in 0..<boundingBoxViews.count {
-            // TODO: make threshold of total detected items
-            if i < predictions.count && i < 100 {
-                let prediction = predictions[i]
-                
-                var rect = prediction.boundingBox  // normalized xywh, origin lower left
-                switch UIDevice.current.orientation {
-                case .portraitUpsideDown:
-                    rect = CGRect(x: 1.0 - rect.origin.x - rect.width,
-                                  y: 1.0 - rect.origin.y - rect.height,
-                                  width: rect.width,
-                                  height: rect.height)
-                case .landscapeLeft:
-                    rect = CGRect(x: rect.origin.y,
-                                  y: 1.0 - rect.origin.x - rect.width,
-                                  width: rect.height,
-                                  height: rect.width)
-                case .landscapeRight:
-                    rect = CGRect(x: 1.0 - rect.origin.y - rect.height,
-                                  y: rect.origin.x,
-                                  width: rect.height,
-                                  height: rect.width)
-                case .unknown:
-                    print("The device orientation is unknown, the predictions may be affected")
-                    fallthrough
-                default: break
-                }
-                
-                if ratio >= 1 { // iPhone ratio = 1.218
-                    let offset = (1 - ratio) * (0.5 - rect.minX)
-                    let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: offset, y: -1)
-                    rect = rect.applying(transform)
-                    rect.size.width *= ratio
-                } else { // iPad ratio = 0.75
-                    let offset = (ratio - 1) * (0.5 - rect.maxY)
-                    let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: offset - 1)
-                    rect = rect.applying(transform)
-                    rect.size.height /= ratio * 1.75
-                }
-                
-                // Scale normalized to pixels [375, 812] [width, height]
-                rect = VNImageRectForNormalizedRect(rect, Int(width), Int(height))
-                
-                // The labels array is a list of VNClassificationObservation objects,
-                // with the highest scoring class first in the list.
-                let bestClass = prediction.labels[0].identifier
-                let confidence = prediction.labels[0].confidence
-                
-                // Calculate the center point of the bounding box
-                let centerX = rect.origin.x + rect.size.width / 2
-                let centerY = rect.origin.y + rect.size.height / 2
-                
-                let centerRimX = rimRect.origin.x + rimRect.size.width / 2
-                let centerRimY = rimRect.origin.y + rimRect.size.height / 2
-                
-                
-                // Check if the center point is below Y = 50
-                if centerY < centerRimY && bestClass == "basketball" {
-                    // increase total attempt
-                    if toggleIncreaseAttempt {
-                        self.toggleIncreaseAttempt = false
-                        print("BALL: (\(centerX), \(centerY)")
-                        print("RIM: (\(centerRimX), \(centerRimY)")
-                        self.increaseAttempt?()
-                    }
-                    // stop increasing total attempt if ball is still in the air
-                    self.toggleIncreaseAttempt = false
-                    
-                    let dotSize: CGFloat = 10
-                    let dotRect = CGRect(x: centerX - dotSize / 2, y: centerY - dotSize / 2, width: dotSize, height: dotSize)
-                    
-                    let shapeLayer = CAShapeLayer()
-                    let path = UIBezierPath(roundedRect: dotRect, cornerRadius: 6.0)  // Rounded rectangle for the bounding box
-                    shapeLayer.path = path.cgPath
-                    shapeLayer.strokeColor = CGColor(red: 255, green: 0, blue: 0, alpha: 1)
-                    shapeLayer.lineWidth = 4  // Set the stroke line width
-                    
-                    videoCapture.previewLayer?.addSublayer(shapeLayer)
-                    // Animate the shape layer opacity
-                    CATransaction.begin()
-                    CATransaction.setCompletionBlock {
-                        // Remove the shape layer after the animation completes
-                        shapeLayer.removeFromSuperlayer()
-                    }
-                    let animation = CABasicAnimation(keyPath: "opacity")
-                    animation.fromValue = 1.0
-                    animation.toValue = 0.0
-                    animation.duration = 5.0  // Set the duration to 5 seconds
-                    shapeLayer.add(animation, forKey: "opacityAnimation")
-                    CATransaction.commit()
-                } else if centerY > centerRimY && bestClass == "basketball"{
-                    // Show the bounding box as before
-                    self.toggleIncreaseAttempt = true // toggle can increase attempt again
-                }
-
-                boundingBoxViews[i].show(frame: rect,
-                                         label: String(format: "%@ %.1f", bestClass, confidence * 100),
-                                         color: colors[bestClass] ?? UIColor.white,
-                                         alpha: CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9))
-
-            } else {
-                boundingBoxViews[i].hide()
+        var ballFound = false
+        var rimFound = false
+        for prediction in predictions {
+            if prediction.labels[0].identifier == "basketball" {
+                ballFound = true
+                lastUpdatedBall = processRect(item: prediction.boundingBox, ratio: ratio)
+                lastUpdatedBallConfidence = prediction.labels[0].confidence
+            } else if prediction.labels[0].identifier == "rim" {
+                rimFound = true
+                lastUpdatedRim = processRect(item: prediction.boundingBox, ratio: ratio)
+                lastUpdatedRimConfidence = prediction.labels[0].confidence
             }
+            
+            if ballFound && rimFound {
+                break
+            }
+        }
+        
+        if !ballFound || !rimFound {
+            return
+        }
+
+        for i in 0..<boundingBoxViews.count {
+            boundingBoxViews[i].hide()
+        }
+
+        // show rim
+        boundingBoxViews[0].show(frame: lastUpdatedRim,
+                                 label: String(format: "%@ %.1f", "rim", lastUpdatedRimConfidence * 100),
+                                 color: colors["rim"] ?? UIColor.white,
+                                 alpha: CGFloat((lastUpdatedRimConfidence - 0.2) / (1.0 - 0.2) * 0.9))
+
+        // show ball
+        boundingBoxViews[1].show(frame: lastUpdatedBall,
+                                 label: String(format: "%@ %.1f", "basketball", lastUpdatedBallConfidence * 100),
+                                 color: colors["basketball"] ?? UIColor.white,
+                                 alpha: CGFloat((lastUpdatedBallConfidence - 0.2) / (1.0 - 0.2) * 0.9))
+        
+        let ballCenterX = lastUpdatedBall.origin.x + lastUpdatedBall.size.width / 2
+        let ballCenterY = lastUpdatedBall.origin.y + lastUpdatedBall.size.height / 2
+
+        let rimCenterX = lastUpdatedRim.origin.x + lastUpdatedRim.size.width / 2
+        let rimBottomY = lastUpdatedRim.origin.y + lastUpdatedRim.size.height
+        
+        if ballCenterY < rimBottomY {
+            if toggleIncreaseAttempt {
+                self.toggleIncreaseAttempt = false
+                self.increaseAttempt?()
+            }
+            // stop increasing total attempt if ball is still in the air
+            self.toggleIncreaseAttempt = false
+            
+            let dotSize: CGFloat = 10
+            let dotRect = CGRect(x: ballCenterX - dotSize / 2, y: ballCenterY - dotSize / 2, width: dotSize, height: dotSize)
+            
+            let shapeLayer = CAShapeLayer()
+            let path = UIBezierPath(roundedRect: dotRect, cornerRadius: 6.0)  // Rounded rectangle for the bounding box
+            shapeLayer.path = path.cgPath
+            shapeLayer.strokeColor = CGColor(red: 255, green: 0, blue: 0, alpha: 1)
+            shapeLayer.lineWidth = 4  // Set the stroke line width
+            
+            videoCapture.previewLayer?.addSublayer(shapeLayer)
+            // Animate the shape layer opacity
+            CATransaction.begin()
+            CATransaction.setCompletionBlock {
+                // Remove the shape layer after the animation completes
+                shapeLayer.removeFromSuperlayer()
+            }
+            let animation = CABasicAnimation(keyPath: "opacity")
+            animation.fromValue = 1.0
+            animation.toValue = 0.0
+            animation.duration = 5.0  // Set the duration to 5 seconds
+            shapeLayer.add(animation, forKey: "opacityAnimation")
+            CATransaction.commit()
+        } else {
+            self.toggleIncreaseAttempt = true
         }
     }
     
