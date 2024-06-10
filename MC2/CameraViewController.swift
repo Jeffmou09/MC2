@@ -248,10 +248,18 @@ class ViewController: UIViewController {
                 // Calculate the center point of the bounding box
                 let centerX = rect.origin.x + rect.size.width / 2
                 let centerY = rect.origin.y + rect.size.height / 2
+                
+                let centerRimX = rimRect.origin.x + rimRect.size.width / 2
+                let centerRimY = rimRect.origin.y + rimRect.size.height / 2
+                
+                
                 // Check if the center point is below Y = 50
-                if centerY < self.rimRect.origin.y && bestClass == "basketball" {
+                if centerY < centerRimY && bestClass == "basketball" {
                     // increase total attempt
                     if toggleIncreaseAttempt {
+                        self.toggleIncreaseAttempt = false
+                        print("BALL: (\(centerX), \(centerY)")
+                        print("RIM: (\(centerRimX), \(centerRimY)")
                         self.increaseAttempt?()
                     }
                     // stop increasing total attempt if ball is still in the air
@@ -279,19 +287,16 @@ class ViewController: UIViewController {
                     animation.duration = 5.0  // Set the duration to 5 seconds
                     shapeLayer.add(animation, forKey: "opacityAnimation")
                     CATransaction.commit()
+                } else if centerY > centerRimY && bestClass == "basketball"{
                     // Show the bounding box as before
-                    boundingBoxViews[i].show(frame: rect,
-                                             label: String(format: "%@ %.1f", bestClass, confidence * 100),
-                                             color: colors[bestClass] ?? UIColor.white,
-                                             alpha: CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9))
-                } else {
-                    // Show the bounding box as before
-                    self.toggleIncreaseAttempt = true // toggle can increase
-                    boundingBoxViews[i].show(frame: rect,
-                                             label: String(format: "%@ %.1f", bestClass, confidence * 100),
-                                             color: colors[bestClass] ?? UIColor.white,
-                                             alpha: CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9))
+                    self.toggleIncreaseAttempt = true // toggle can increase attempt again
                 }
+
+                boundingBoxViews[i].show(frame: rect,
+                                         label: String(format: "%@ %.1f", bestClass, confidence * 100),
+                                         color: colors[bestClass] ?? UIColor.white,
+                                         alpha: CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9))
+
             } else {
                 boundingBoxViews[i].hide()
             }
@@ -311,7 +316,9 @@ class ViewController: UIViewController {
         } else {
             ratio = (height / width) / (16.0 / 9.0)  // .hd4K3840x2160, .hd1920x1080, .hd1280x720 etc.
         }
-        var currentHighestRimRect = CGRect()
+        
+        var currentHighestRim = CGRect()
+        
         for i in 0..<boundingBoxViews.count {
             if i < predictions.count && i < 100 {
                 let prediction = predictions[i]
@@ -350,21 +357,31 @@ class ViewController: UIViewController {
                     rect = rect.applying(transform)
                     rect.size.height /= ratio * 1.75
                 }
-
+                
                 // Scale normalized to pixels [375, 812] [width, height]
-                rect = VNImageRectForNormalizedRect(prediction.boundingBox, Int(width), Int(height))
+                rect = VNImageRectForNormalizedRect(rect, Int(width), Int(height))
                 
                 // The labels array is a list of VNClassificationObservation objects,
                 // with the highest scoring class first in the list.
                 let bestClass = prediction.labels[0].identifier
                 
                 if bestClass == "rim" {
-                    if rect.origin.y > currentHighestRimRect.origin.y {
-                        currentHighestRimRect = rect
+                    if rect.origin.y > currentHighestRim.origin.y {
+                        currentHighestRim = rect
                     }
                 }
                 
-                self.rimRect = currentHighestRimRect
+                self.rimRect = currentHighestRim
+                
+                
+//                // debudg show rim
+//                let shapeLayer = CAShapeLayer()
+//                let path = UIBezierPath(roundedRect: currentHighestRim, cornerRadius: 6.0)  // Rounded rectangle for the bounding box
+//                shapeLayer.path = path.cgPath
+//                shapeLayer.strokeColor = CGColor(red: 0, green: 255, blue: 0, alpha: 1)
+//                shapeLayer.lineWidth = 4  // Set the stroke line width
+//
+//                videoCapture.previewLayer?.addSublayer(shapeLayer)
             }
         }
     }
